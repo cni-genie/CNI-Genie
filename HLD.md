@@ -60,7 +60,7 @@ spec:
       - name: CNI_NETWORK_CONFIG
         valueFrom:
           configMapKeyRef:
-            name: calico-config-file
+            name: canal-config-file
             key: cni_network_config
 ```
 
