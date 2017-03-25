@@ -1,4 +1,4 @@
-CNI-Genie enables orchestrators (kubernetes, mesos) to seamless connectivity to choice of CNI plugins (calico, romana, weave) configured on a Node.
+CNI-Genie enables orchestrators (kubernetes, mesos) for seamless connectivity to choice of CNI plugins (calico, romana, weave) configured on a Node.
 
 [![Build Status](https://travis-ci.org/Huawei-PaaS/CNI-Genie.svg)](https://travis-ci.org/Huawei-PaaS/CNI-Genie)
 
