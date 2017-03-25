@@ -22,7 +22,7 @@ We will try to explain here how CNI-Genie is designed to work.
   * We start Kubelet with **genie** as the CNI binary
   * This is done by passing /etc/cni/net.d/genie.conf to kubelet
   
-![image](what-cni-genie.png)
+![image](how-step1.png)
 
 * Step 2:
   * User inputs his network of choice in **pod annotations**
