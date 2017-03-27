@@ -3,9 +3,8 @@
 .SUFFIXES:
 
 
-GOPATH=/product/workspace
+GO_PATH=$(GOPATH)
 SRCFILES=cni-genie.go
-LOCAL_IP_ENV?=$(shell ip route get 8.8.8.8 | head -1 | awk '{print $$7}')
 
 # Ensure that the dist directory is always created
 MAKE_SURE_DIST_EXIST := $(shell mkdir -p dist)
@@ -24,5 +23,5 @@ release: clean
 # Build the genie cni plugin
 dist/genie: $(SRCFILES)
 	mkdir -p $(@D)
-	@GOPATH=$(GOPATH) CGO_ENABLED=0 go build -v -i -o dist/genie \
+	@GOPATH=$(GO_PATH) CGO_ENABLED=0 go build -v -i -o dist/genie \
 	-ldflags "-X main.VERSION=1.0 -s -w" cni-genie.go
