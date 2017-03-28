@@ -1,4 +1,6 @@
-## Kubernetes CNI plugin limitation
+## You can find here our [version-wise planned releases](FutureEnhancements.md)
+
+## Kubernetes CNI plugin limitation (v1)
 
 Right now Kubernetes Kubelet running on a slave node connects to atmost one CNI plugin only i.e. either Canal or Romana or Weave.
 We were looking for a way if we can allow a pod scheduled to run on a Node, to pickup over run time any of the existing CNI plugins running on that particular node.
