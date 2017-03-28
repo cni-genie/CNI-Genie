@@ -42,3 +42,11 @@ We will try to explain here how CNI-Genie is designed to work.
   * Call the network choice requested by the user
 
 ![image](how-step5.png)
+
+
+### You can find here our [version-wise planned releases](FutureEnhancements.md)
+
+### You can find here [Problem Statements](INTRODUCTION.md)
+
+### [High-Level Design](HLD.md)
+
