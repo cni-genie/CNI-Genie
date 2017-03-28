@@ -1,7 +1,7 @@
-Going forward CNI-Genie would be addressing following areas:
+# Followig versions are planned for CNI-Genie:
 
 **CNI-Genie v1**
-* Interface Connector to 3rd party CNI-Plugis [CNI-Genie ManualPick] (README.md)
+* Interface Connector to 3rd party CNI-Plugis [CNI-Genie ManualPick] (/README.md)
 
 **CNI-Genie v2**
 * Intelligence in picking up the right CNS (Container Networking Solution) [CNI-Genie SmartPick] (smart-cni-genie/README.md)
