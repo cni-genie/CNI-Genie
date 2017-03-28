@@ -1,8 +1,8 @@
-CNI-Genie enables orchestrators (kubernetes, mesos) for seamless connectivity to choice of CNI plugins (calico, romana, weave) configured on a Node.
+CNI-Genie enables orchestrators (kubernetes, mesos) for seamless connectivity to choice of CNI plugins (calico, canal, romana, weave) configured on a Node.
 
 [![Build Status](https://travis-ci.org/Huawei-PaaS/CNI-Genie.svg)](https://travis-ci.org/Huawei-PaaS/CNI-Genie)
 
-***Note: this repo is still in inital development phase, so please expect cracking sounds any time! :)***
+***Note: this repo is still in inital development phase, so expect cracking sounds at times! :)***
 
 ***Also please note that this initial proto-type is tested only with Kubernetes build. Mesos will be coming soon...***
 
@@ -122,3 +122,5 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 7. Network access control
 
 Note: CNI Genie is NOT a routing solution! It gets IP addresses from various CNSs
+
+More docs here [docs/README.md](docs/README.md), [Road map](docs/FutureEnhancements.md)
