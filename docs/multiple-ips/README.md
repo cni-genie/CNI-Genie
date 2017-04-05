@@ -12,7 +12,7 @@
 * Step 2:
   * User inputs his network(s) of choice in **pod annotations**
   
-    ![image](multiple-ips-how-step2.png)
+    ![image](multiple-ips-how-step2.PNG)
 
 * Step 3: same as Step 3 in [README.md](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/README.md)
 
