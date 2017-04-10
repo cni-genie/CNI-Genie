@@ -1,0 +1,5 @@
+*~
+bin
+*.coverprofile
+vendor
+.idea

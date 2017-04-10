@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+# Run tests in random order find tests recursively (-r).
+echo $WHAT
+ginkgo -cover -r --skipPackage vendor $WHAT
+
+echo
+echo '+==============+'
+echo '| All coverage |'
+echo '+==============+'
+echo
+find . -iname '*.coverprofile' | xargs -I _ go tool cover -func=_
+
+echo
+echo '+==================+'
+echo '| Missing coverage |'
+echo '+==================+'
+echo
+find . -iname '*.coverprofile' | xargs -I _ go tool cover -func=_ | grep -v '100.0%'
+
