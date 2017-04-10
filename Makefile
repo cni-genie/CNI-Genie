@@ -10,7 +10,7 @@ SRCFILES=cni-genie.go
 MAKE_SURE_DIST_EXIST := $(shell mkdir -p dist)
 
 .PHONY: all binary plugin
-default: all
+default: clean all
 all: plugin
 plugin: dist/genie
 
