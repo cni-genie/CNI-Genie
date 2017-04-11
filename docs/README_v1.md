@@ -1,6 +1,6 @@
-## You can find here our [version-wise planned releases](FutureEnhancements.md)
+## You can find here our [features covered in each CNI-Genie version](FutureEnhancements.md)
 
-## Kubernetes CNI plugin limitation (v1)
+## Motivation behind CNI-Genie v1
 
 Right now Kubernetes Kubelet running on a slave node connects to atmost one CNI plugin only i.e. either Canal or Romana or Weave.
 We were looking for a way if we can allow a pod scheduled to run on a Node, to pickup over run time any of the existing CNI plugins running on that particular node.
@@ -13,12 +13,12 @@ For any multi-network support we need changes to be done to the Kubernetes, whic
 
 So here we've CNI-Genie that's designed to solve this problem statement without touching the Kubernetes code! 
 
-## What CNI-Genie does?
+## What CNI-Genie v1 does?
 We will try to explain here how CNI-Genie is designed to work. 
 
 ![image](what-cni-genie.png)
 
-## How CNI-Genie works?
+## How CNI-Genie v1 works?
 
 * Step 1: 
   * We start Kubelet with **genie** as the CNI binary
