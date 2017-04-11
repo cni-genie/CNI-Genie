@@ -14,7 +14,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"runtime"
@@ -28,6 +27,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 	"strings"
+	"strconv"
 )
 
 var hostname string
@@ -70,47 +70,58 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	annot := make(map[string]string)
 	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
-	fmt.Fprintf(os.Stderr, "Calico CNI annot= %s\n", annot)
+	annotStringArray := strings.Split(annot["cni"], ",")
+	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
 
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var result *types.Result
 
-	fmt.Fprintf(os.Stderr, "Calico CNI conf.IPAM.Type= %s\n", conf.IPAM.Type)
-	fmt.Fprintf(os.Stderr, "Calico CNI conf.Type= %s\n", conf.Type)
-
-	switch annot["cni"] {
-	case "weave":
-		conf.IPAM.Type = "weave-ipam"
-		conf.Type = "weave-net"
-		args.StdinData,_ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("weave-net", args.StdinData)
-		if err != nil {
-			return err
+	i := 0
+	for i < len(annotStringArray) {
+		switch annotStringArray[i] {
+		case "weave":
+			conf.IPAM.Type = "weave-ipam"
+			conf.Type = "weave-net"
+			args.StdinData,_ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			result, err = ipam.ExecAdd("weave-net", args.StdinData)
+			if err != nil {
+				return err
+			}
+		case "calico":
+			conf.IPAM.Type = "calico-ipam"
+			conf.Type = "calico"
+			args.StdinData,_ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			result, err = ipam.ExecAdd("calico", args.StdinData)
+			if err != nil {
+				return err
+			}
+		case "canal":
+			conf.Type = "flannel"
+			conf.Delegate.DelegateType = "calico"
+			conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
+			conf.Delegate.LogLevel = conf.LogLevel
+			conf.Delegate.Policy = conf.Policy
+			conf.Delegate.Kubernetes = conf.Kubernetes
+			args.StdinData, _ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			result, err = ipam.ExecAdd("flannel", args.StdinData)
+			if err != nil {
+				return err
+			}
 		}
-	case "calico":
-		conf.IPAM.Type = "calico-ipam"
-		conf.Type = "calico"
-		args.StdinData,_ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("calico", args.StdinData)
-		if err != nil {
-			return err
-		}
-	case "canal":
-		conf.Type = "flannel"
-		conf.Delegate.DelegateType = "calico"
-		conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
-		conf.Delegate.LogLevel = conf.LogLevel
-		conf.Delegate.Policy = conf.Policy
-		conf.Delegate.Kubernetes = conf.Kubernetes
-		args.StdinData, _ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("flannel", args.StdinData)
-		if err != nil {
-			return err
-		}
+		i += 1
 	}
 
-	fmt.Fprintf(os.Stderr, "Calico CNI result= %s\n", result)
+	fmt.Fprintf(os.Stderr, "CNI Genie result= %s\n", result)
 	return result.Print()
 }
 
@@ -120,7 +131,7 @@ func cmdDel(args *skel.CmdArgs) error {
 		return fmt.Errorf("failed to load netconf: %v", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Calico CNI releasing IP address\n")
+	fmt.Fprintf(os.Stderr, "CNI Genie releasing IP address\n")
 
 	workload, _, err := getIdentifiers(args)
 	if err != nil {
@@ -144,44 +155,55 @@ func cmdDel(args *skel.CmdArgs) error {
 	}
 	annot := make(map[string]string)
 	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
-	fmt.Fprintf(os.Stderr, "Calico CNI annot= %s\n", annot)
+	annotStringArray := strings.Split(annot["cni"], ",")
+	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
 
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var ipamErr error
 
-	fmt.Fprintf(os.Stderr, "Calico CNI conf.IPAM.Type= %s\n", conf.IPAM.Type)
-	fmt.Fprintf(os.Stderr, "Calico CNI conf.Type= %s\n", conf.Type)
-
-	switch annot["cni"] {
-	case "weave":
-		conf.IPAM.Type = "weave-ipam"
-		conf.Type = "weave-net"
-		args.StdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("weave-net", args.StdinData)
-		if ipamErr != nil {
-			fmt.Fprintf(os.Stderr, "Calico CNI ipamErr= %s\n", ipamErr)
+	i := 0
+	for i < len(annotStringArray) {
+		switch annotStringArray[i] {
+		case "weave":
+			conf.IPAM.Type = "weave-ipam"
+			conf.Type = "weave-net"
+			args.StdinData, _ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			ipamErr := ipam.ExecDel("weave-net", args.StdinData)
+			if ipamErr != nil {
+				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
+			}
+		case "calico":
+			conf.IPAM.Type = "calico-ipam"
+			conf.Type = "calico"
+			args.StdinData, _ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			ipamErr := ipam.ExecDel("calico", args.StdinData)
+			if ipamErr != nil {
+				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
+			}
+		case "canal":
+			conf.Type = "flannel"
+			conf.Delegate.DelegateType = "calico"
+			conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
+			conf.Delegate.LogLevel = conf.LogLevel
+			conf.Delegate.Policy = conf.Policy
+			conf.Delegate.Kubernetes = conf.Kubernetes
+			args.StdinData, _ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			ipamErr := ipam.ExecDel("flannel", args.StdinData)
+			if ipamErr != nil {
+				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
+			}
 		}
-	case "calico":
-		conf.IPAM.Type = "calico-ipam"
-		conf.Type = "calico"
-		args.StdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("calico", args.StdinData)
-		if ipamErr != nil {
-			fmt.Fprintf(os.Stderr, "Calico CNI ipamErr= %s\n", ipamErr)
-		}
-	case "canal":
-		conf.Type = "flannel"
-		conf.Delegate.DelegateType = "calico"
-		conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
-		conf.Delegate.LogLevel = conf.LogLevel
-		conf.Delegate.Policy = conf.Policy
-		conf.Delegate.Kubernetes = conf.Kubernetes
-		args.StdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("flannel", args.StdinData)
-		if ipamErr != nil {
-			fmt.Fprintf(os.Stderr, "Calico CNI ipamErr= %s\n", ipamErr)
-		}
+		i += 1
 	}
 
 	return ipamErr
@@ -202,7 +224,6 @@ func getK8sLabelsAnnotations(client *kubernetes.Clientset, k8sargs utils.K8sArgs
 
 	return labels, pod.Annotations, nil
 }
-
 
 // Create a logger which always includes common fields
 func createContextLogger(workload string) *log.Entry {
@@ -231,7 +252,6 @@ func getIdentifiers(args *skel.CmdArgs) (workloadID string, orchestratorID strin
 	}
 	return workloadID, orchestratorID, nil
 }
-
 
 func newK8sClient(conf utils.NetConf, logger *log.Entry) (*kubernetes.Clientset, error) {
 	// Some config can be passed in a kubeconfig file
@@ -288,22 +308,5 @@ var VERSION string
 func main() {
 	// Display the version on "-v", otherwise just delegate to the skel code.
 	// Use a new flag set so as not to conflict with existing libraries which use "flag"
-	flagSet := flag.NewFlagSet("Calico", flag.ExitOnError)
-
-	version := flagSet.Bool("v", false, "Display version")
-	err := flagSet.Parse(os.Args[1:])
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	if *version {
-		fmt.Println(VERSION)
-		os.Exit(0)
-	}
-
-	if err := AddIgnoreUnknownArgs(); err != nil {
-		os.Exit(1)
-	}
-
 	skel.PluginMain(cmdAdd, cmdDel)
 }
