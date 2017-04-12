@@ -1,20 +1,18 @@
 ## You can find here our [features covered in each CNI-Genie version](FutureEnhancements.md)
 
-## Motivation behind CNI-Genie v1
+# Feature 1: CNI-Genie "Multiple CNI Plugins"
 
-Right now Kubernetes Kubelet running on a slave node connects to atmost one CNI plugin only i.e. either Canal or Romana or Weave.
-We were looking for a way if we can allow a pod scheduled to run on a Node, to pickup over run time any of the existing CNI plugins running on that particular node.
+## Motivation behind Multiple CNI Plugins
 
-The current limitation and the reason why Kubernetes cannot do this is that when you are starting the kubelet, you are expected to pass cni-plugin details as a part of 'kubelet' process.
-In this case you have to pick either of the 3 CNI plugins and passed as a flags to the kubelet.
+Right now Kubernetes Kubelet running on a slave node connects to at most one CNI plugin only i.e. either Canal or Romana or Weave.
+This CNI-Genie feature enbales a pod, scheduled to run on a Node, to pickup over runtime any of the existing CNI plugins running on that particular node.
 
-Now that's in a way a we feel is too restrictive! What if we want to use certain set of pods use Canal networking and other set of pods use weave networking? This is currently not possible in Kubernetes. 
-For any multi-network support we need changes to be done to the Kubernetes, which leads to backward compatibility issues.
+The current limitation and the reason why Kubernetes cannot do this is that when you are starting the kubelet, you are expected to pass cni-plugin details as a part of 'kubelet' process. In this case you have to pick only one of the existing CNI plugins and pass it as a flag to the kubelet. Now we feel that's in a way too restrictive! What if we want certain set of pods to use Canal networking and other set of pods to use weave networking? This is currently not possible in Kubernetes. For any multi-network support we need changes to be done to the Kubernetes, which leads to backward compatibility issues.
 
-So here we've CNI-Genie that's designed to solve this problem statement without touching the Kubernetes code! 
+So, CNI-Genie "Multiple CNI Plugins" feature is designed to solve this problem without touching the Kubernetes code! 
 
 ## What CNI-Genie v1 does?
-We will try to explain here how CNI-Genie is designed to work. 
+We will try to explain here how "Multiple CNI Plugins" feature is designed to work. 
 
 ![image](what-cni-genie.png)
 
