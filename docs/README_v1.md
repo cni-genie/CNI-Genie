@@ -27,7 +27,7 @@ We will try to explain here how CNI-Genie is designed to work.
 ![image](how-step1.png)
 
 * Step 2:
-  * User inputs his network of choice in **pod annotations**
+  *  The user manually select the CNI plugin(s) that he wants to add to a container upon creating a pod object. This goes under **pod annotations**
   
 ![image](how-step2.png)
 
