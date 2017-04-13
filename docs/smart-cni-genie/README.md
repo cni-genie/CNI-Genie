@@ -1,3 +1,7 @@
+## You can find here our [features covered in each CNI-Genie version](../FutureEnhancements.md)
+
+# Feature 3: CNI-Genie "Smart CNI Plugin Selection"
+
 # Use Case
 
 * Upon creating a pod, the user can manually select the logical network, or multiple logical networks, that the pod should be added to
