@@ -21,12 +21,12 @@ kaveh.shafiee@huawei.com
 CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes) open-source project and is designed to provide the following features:
 
 1. [Multiple CNI plugins](docs/multiple-cni-plugins/README.md) are available to users in runtime. This figure shows Kubernetes CNI Plugin landscape before and after CNI-Genie
-   ![image](what-cni-genie.png)
+   ![image](docs/multiple-cni-plugins/what-cni-genie.png)
     - User-story: based on "performance" requirements, "application" requirements, “workload placement” requirements, the user could be interested to use different CNI plugins for different application groups
     - Different CNI plugins are different in terms of need for port-mapping, NAT, tunneling, interrupting host ports/interfaces
 
 2. The user can manually select one (or more) CNI plugin(s) to be added to containers upon creating them. [Multiple IP addresses](docs/multiple-ips/README.md) can be injected into a single container making the container reachable across multiple networks
-   ![image](multi-interface.png)
+   ![image](docs/multiple-ips/multi-interface.png)
     - User-story: in a serverless platform the “Request Dispatcher” container that receives requests from customers of all different tenants needs to be able to pass the request to the right tenant. As a result, is should be reachable on the networks of all tenants
     - User-story: many Telecom vendors are adopting container technology. For a router/firewall application to run in a container, it needs to have multiple interfaces
 
