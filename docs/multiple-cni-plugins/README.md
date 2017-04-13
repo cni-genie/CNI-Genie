@@ -1,4 +1,4 @@
-## You can find here our [features covered in each CNI-Genie version](../CNIGenieFeatureSet.md)
+## You can find here our [existing & future features covered in CNI-Genie](../CNIGenieFeatureSet.md)
 
 # Feature 1: CNI-Genie "Multiple CNI Plugins"
 
@@ -93,7 +93,7 @@ spec:
 ![image](how-step5.png)
 
 
-### You can find here our [version-wise planned releases](../CNIGenieFeatureSet.md)
+### You can find here our [CNI-Genie Feature Set](docs/CNIGenieFeatureSet.md)
 
 ### [High-Level Design](../HLD.md)
 
