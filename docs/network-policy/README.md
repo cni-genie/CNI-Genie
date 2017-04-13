@@ -1,4 +1,4 @@
-## You can find here our [features covered in each CNI-Genie version](../CNIGenieFeatureSet.md)
+## You can find here our [existing & future features covered in CNI-Genie](../CNIGenieFeatureSet.md)
 
 # Feature 4: CNI-Genie "Network Policy Engine"
 
