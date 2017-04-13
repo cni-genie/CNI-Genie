@@ -1,6 +1,6 @@
 # CNI-Genie
 
-CNI-Genie enables container orchestrators (kubernetes, mesos) to seamlessly connect to choice of CNI plugins (calico, canal, romana, weave) configured on a Node. Without CNI-Genie, kubelet is bound to a signle CNI plugin passed to kubelet on start. CNI-Genie allows for multiple CNI plugins being available to kubelet simultaneously. 
+CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kubernetes/kubernetes), [Mesos](https://mesosphere.com/)) to seamlessly connect to choice of CNI plugins ([Calico](https://github.com/projectcalico/calico), [Canal](https://github.com/projectcalico/canal), [Romana[(https://github.com/romana/romana), [Weave](https://github.com/weaveworks/weave)) configured on a Node. Without CNI-Genie, kubelet is bound to a signle CNI plugin passed to kubelet on start. CNI-Genie allows for multiple CNI plugins being available to kubelet simultaneously. 
 
 [![Build Status](https://travis-ci.org/Huawei-PaaS/CNI-Genie.svg)](https://travis-ci.org/Huawei-PaaS/CNI-Genie)
 
@@ -20,12 +20,12 @@ kaveh.shafiee@huawei.com
 
 CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes) open-source project and is designed to provide the following features:
 
-1. Multiple CNI plugins are available to users in runtime. This figure shows Kubernetes CNI Plugin landscape before and after CNI-Genie
+1. [Multiple CNI plugins](docs/README_v1.md) are available to users in runtime. This figure shows Kubernetes CNI Plugin landscape before and after CNI-Genie
    ![image](what-cni-genie.png)
     - User-story: based on "performance" requirements, "application" requirements, “workload placement” requirements, the user could be interested to use different CNI plugins for different application groups
     - Different CNI plugins are different in terms of need for port-mapping, NAT, tunneling, interrupting host ports/interfaces
 
-2. The user can manually select one (or more) CNI plugin(s) to be added to containers upon creating them. Multiple IP addresses can be injected into a single container making the container reachable across multiple networks
+2. The user can manually select one (or more) CNI plugin(s) to be added to containers upon creating them. [Multiple IP addresses](docs/multiple-ips/README.md) can be injected into a single container making the container reachable across multiple networks
    ![image](multi-interface.png)
     - User-story: in a serverless platform the “Request Dispatcher” container that receives requests from customers of all different tenants needs to be able to pass the request to the right tenant. As a result, is should be reachable on the networks of all tenants
     - User-story: many Telecom vendors are adopting container technology. For a router/firewall application to run in a container, it needs to have multiple interfaces
