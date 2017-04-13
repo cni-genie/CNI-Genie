@@ -2,11 +2,11 @@
 
 ## Existing features
 
-**CNI-Genie v1**
-* Interface Connector to 3rd party CNI-Plugis [CNI-Genie ManualPick](README.md)
+**Feature 1: CNI-Genie "Multiple CNI Plugins"**
+* Interface Connector to 3rd party CNI-Plugis [Manually pick one of the Multiple CNI Plugins](README_v1.md)
 
-**CNI-Genie v3**
-* Injects multiple IPs to a single container [Multi IPs](multiple-ips/README.md)
+**Feature 2: CNI-Genie "Multiple IP Addresses"**
+* Injects multiple IPs to a single container [Multiple IP Addresses](multiple-ips/README.md)
 
 ## Future features
 
