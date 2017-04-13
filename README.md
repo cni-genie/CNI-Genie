@@ -1,6 +1,6 @@
 # CNI-Genie
 
-CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kubernetes/kubernetes), [Mesos](https://mesosphere.com/)) to seamlessly connect to choice of CNI plugins ([Calico](https://github.com/projectcalico/calico), [Canal](https://github.com/projectcalico/canal), [Romana[(https://github.com/romana/romana), [Weave](https://github.com/weaveworks/weave)) configured on a Node. Without CNI-Genie, kubelet is bound to a signle CNI plugin passed to kubelet on start. CNI-Genie allows for multiple CNI plugins being available to kubelet simultaneously. 
+CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kubernetes/kubernetes), [Mesos](https://mesosphere.com/)) to seamlessly connect to choice of CNI plugins ([Calico](https://github.com/projectcalico/calico), [Canal](https://github.com/projectcalico/canal), [Romana](https://github.com/romana/romana), [Weave](https://github.com/weaveworks/weave)) configured on a Node. Without CNI-Genie, kubelet is bound to a signle CNI plugin passed to kubelet on start. CNI-Genie allows for multiple CNI plugins being available to kubelet simultaneously. 
 
 [![Build Status](https://travis-ci.org/Huawei-PaaS/CNI-Genie.svg)](https://travis-ci.org/Huawei-PaaS/CNI-Genie)
 
@@ -20,7 +20,7 @@ kaveh.shafiee@huawei.com
 
 CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes) open-source project and is designed to provide the following features:
 
-1. [Multiple CNI plugins](docs/README_v1.md) are available to users in runtime. This figure shows Kubernetes CNI Plugin landscape before and after CNI-Genie
+1. [Multiple CNI plugins](docs/multiple-cni-plugins/README.md) are available to users in runtime. This figure shows Kubernetes CNI Plugin landscape before and after CNI-Genie
    ![image](what-cni-genie.png)
     - User-story: based on "performance" requirements, "application" requirements, “workload placement” requirements, the user could be interested to use different CNI plugins for different application groups
     - Different CNI plugins are different in terms of need for port-mapping, NAT, tunneling, interrupting host ports/interfaces
@@ -38,4 +38,4 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 
 Note: CNI Genie is NOT a routing solution! It gets IP addresses from various CNSs
 
-### More docs here [Getting started](docs/GettingStarted.md), [CNI-Genie Feature Set](docs/FutureEnhancements.md)
+### More docs here [Getting started](docs/GettingStarted.md), [CNI-Genie Feature Set](docs/CNIGenieFeatureSet.md)

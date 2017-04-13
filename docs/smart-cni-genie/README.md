@@ -1,4 +1,4 @@
-## You can find here our [features covered in each CNI-Genie version](../FutureEnhancements.md)
+## You can find here our [features covered in each CNI-Genie version](../CNIGenieFeatureSet.md)
 
 # Feature 3: CNI-Genie "Smart CNI Plugin Selection"
 
