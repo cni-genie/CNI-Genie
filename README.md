@@ -30,10 +30,11 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
     - User-story: in a serverless platform the “Request Dispatcher” container that receives requests from customers of all different tenants needs to be able to pass the request to the right tenant. As a result, is should be reachable on the networks of all tenants
     - User-story: many Telecom vendors are adopting container technology. For a router/firewall application to run in a container, it needs to have multiple interfaces
 
-3. The user can leave the CNI plugin selection to CNI-Genie
-    - CNI Genie maintains a list of KPIs for all available CNI plugins. Examples of such KPIs are occupancy rate, number of subnets, response times, Bandwidth utilization
+3. The user can leave the CNI plugin selection to CNI-Genie. CNI-Genie maintains a list of Key Performance Indicators (KPIs) to [smartly select one (or more) CNI plugin](docs/smart-cni-genie/README.md)
+    - CNI Genie maintains a list of KPIs for every CNI plugin including occupancy rate, number of subnets, network latency, available network bandwidth    
+    - CNI Genie maintains a list of KPIs for every container, e.g., network bandwidth utilization
 
-4. Network policy engine for network level ACLs
+4. [CNI-Genie network policy engine](docs/network-policy/README.md) for network level ACLs
 
 Note: CNI Genie is NOT a routing solution! It gets IP addresses from various CNSs
 
