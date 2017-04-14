@@ -12,7 +12,23 @@
 
 In this case user leaves CNI-Genie to decide ideal logical network to be picked up for the pod. For this user just defines "cni: genie" in the pod definition.
 
-![image](cni-genie-pic1.png)
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-smart-pick
+  labels:
+    app: web
+  annotations:
+    cni: "genie"
+spec:
+  containers:
+    - name: key-value-store
+      image: nginx:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 6379
+```
 
 CNI-Genie uses a **criterion** to choose the best network. Following are few options we can look at (not limited to only this list):
 
