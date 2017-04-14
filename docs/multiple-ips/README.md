@@ -10,16 +10,16 @@
    
 ## How it should work
 
-* Step 1: same as Step 1 in [README.md](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/README.md) 
+* Step 1: same as Step 1 in [README.md](../multiple-cni-plugins/README.md) 
   
 * Step 2:
   * User inputs his network(s) of choice in **pod annotations**
   
     ![image](multiple-ips-how-step2.PNG)
 
-* Step 3: same as Step 3 in [README.md](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/README.md)
+* Step 3: same as Step 3 in [README.md](../multiple-cni-plugins/README.md)
 
-* Step 4: same as Step 4 in [README.md](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/README.md)
+* Step 4: same as Step 4 in [README.md](../multiple-cni-plugins/README.md)
 
 * Step 5: 
   * Genie calls the network(s) requested by the user and injects Multiple IPs, one per each request, into a single container
