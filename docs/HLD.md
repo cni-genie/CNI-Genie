@@ -1,10 +1,10 @@
-# CNI Genie Version 1 High Level Design
+## You can find here our [existing & future features covered in CNI-Genie](CNIGenieFeatureSet.md)
 
-CNI Genie v1 only supports features 1 and 3. For feature 3 only the case where a single type of logical network is specified by the user is supported in v1.
+# CNI Genie High Level Design
 
 ## Overview
 
-From the viewpoint of Kubernetes kubelet CNI Genie is nothing but just another CNI plugin. As a result, no changes to Kubernetes are required. CNI Genie proxies for all of the existing CNI plugins, each providing a unique container networking solution, on the host.
+From the viewpoint of Kubernetes kubelet CNI-Genie is treated the same as any other CNI plugin. As a result, no changes to Kubernetes are required. CNI Genie proxies for all of the existing CNI plugins, each providing a unique container networking solution, on the host.
 
 ![](overview.png)
 
