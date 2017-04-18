@@ -31,17 +31,17 @@ A detailed illustration of the workflow is given in the following figure:
 
 ![](CNIGenieDetailedWorkflow.png)
 
-* 1.	a “Pod” object is submitted to API Server by the user
-* 2.	Scheduler schedules the pod to one of the slave nodes
-* 3.	Kubelet of the slave node picks up the pod from API Server and creates corresponding container
-* 4.	Kubelet passes the following to CNI-Genie
+* Step 1.	a “Pod” object is submitted to API Server by the user
+* Step 2.	Scheduler schedules the pod to one of the slave nodes
+* Step 3.	Kubelet of the slave node picks up the pod from API Server and creates corresponding container
+* Step 4.	Kubelet passes the following to CNI-Genie
   * a.	CNI_COMMAND
   * b.	CNI_CONTAINERID
   * c.	CNI_NETNS
   * d.	CNI_ARGS (K8S_POD_NAMESPACE, K8S_POD_NAME)
   * e.	CNI_IFNAME (always eth0, please see kubernetes/pkg/kubelet/network/network.go)
-* 5.	CNI-Genie queries API Server with K8S_POD_NAMESPACE, K8S_POD_NAME to get the “pod” object, from which it parses “cni” plugin type, e.g., canal, weave 
-* 6.	CNI-Genie queries the cni plugin of choice with parameters from Step 4 to get IP Address(es) for the pod
-* 7.	CNI-Genie returns the IP Address(es) to Kubelet
-* 8.	Kubelet updates the “Pod” object with the IP Address(es) passed from CNI-Genie
+* Step 5.	CNI-Genie queries API Server with K8S_POD_NAMESPACE, K8S_POD_NAME to get the “pod” object, from which it parses “cni” plugin type, e.g., canal, weave 
+* Step 6.	CNI-Genie queries the cni plugin of choice with parameters from Step 4 to get IP Address(es) for the pod
+* Step 7.	CNI-Genie returns the IP Address(es) to Kubelet
+* Step 8.	Kubelet updates the “Pod” object with the IP Address(es) passed from CNI-Genie
 
