@@ -6,7 +6,7 @@ CNI Genie v1 only supports features 1 and 3. For feature 3 only the case where a
 
 From the viewpoint of Kubernetes kubelet CNI Genie is nothing but just another CNI plugin. As a result, no changes to Kubernetes are required. CNI Genie proxies for all of the existing CNI plugins, each providing a unique container networking solution, on the host.
 
-![](https://github.com/kshafiee/CNI-Genie/blob/master/overview.png)
+![](overview.png)
 
 ## Location of configuration files
 
@@ -75,4 +75,4 @@ spec:
 
 A detailed illustration of the above described workflow is given in the following figure:
 
-![](https://github.com/kshafiee/CNI-Genie/blob/master/workflow.png)
+![](workflow.png)
