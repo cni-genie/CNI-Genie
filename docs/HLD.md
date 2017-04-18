@@ -4,75 +4,44 @@
 
 ## Overview
 
-From the viewpoint of Kubernetes kubelet CNI-Genie is treated the same as any other CNI plugin. As a result, no changes to Kubernetes are required. CNI Genie proxies for all of the existing CNI plugins, each providing a unique container networking solution, on the host.
+From the viewpoint of Kubernetes kubelet CNI-Genie is treated the same as any other CNI plugin. As a result, no changes to Kubernetes are required. CNI Genie proxies for all of the CNI plugins, each providing a unique container networking solution, that are available on the host.
 
-![](overview.png)
+We start Kubelet with **"genie"** as the CNI **"type"**. Note that for this to work we must have already placed **genie** binary under /opt/cni/bin as detailed in [getting started]( GettingStarted.md)
+  * This is done by passing /etc/cni/net.d/genie.conf to kubelet
 
-## Location of configuration files
-
-The configuration files describing the logical networks are still stored under the same default location, i.e.,
-
-    --cni-conf-dir=/etc/cni/net.d/
-    
-For any existing CNI plugin, the user creates the corresponding directory subdirectory under
-
-    /etc/cni/net.d/
-e.g., 
-
-    /etc/cni/net.d/canal/
-    /etc/cni/net.d/calico/
-    /etc/cni/net.d/flannel/
-
-## How user inputs a logical network
-
-In order to select their logical network of interest, the user makes use of the ‘ConfigMap’ object type. In the ConfigMap objects the name of the logical network configuration file is provided in form of a key, value pair. One example is given in the following:
-
-```yaml
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: canal-config-file
-  namespace: kube-system
-data:
-  cni_network_config: |-
-    {
-        "kubernetes": {
-            "kubeconfig": "/etc/cni/net.d/canal/canal.conf"
-        }
+```json
+{
+    "name": "k8s-pod-network",
+    "type": "genie",
+    "etcd_endpoints": "http://10.96.232.136:6666",
+    "log_level": "debug",
+    "policy": {
+      "type": "k8s",
+       "k8s_api_root": "https://10.96.0.1:443",
+       "k8s_auth_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJjYWxpY28tY25pLXBsdWdpbi10b2tlbi13Zzh3OSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJjYWxpY28tY25pLXBsdWdpbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImJlZDY2NTE3LTFiZjItMTFlNy04YmU5LWZhMTYzZTRkZWM2NyIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTpjYWxpY28tY25pLXBsdWdpbiJ9.GEAcibv-urfWRGTSK0gchlCB6mtCxbwnfgxgJYdEKRLDjo7Sjyekg5lWPJoMopzzPu8_-Tddd-yPZDJc44NCGRep7_ovjjJdlQvjhc0g1XA7NS8W0OMNHUJAzueyn4iuEwDHR7oNS_nwMqsfzgCsiIRkc7NkQDtKaBj8GOYTz9126zk37TqXylh7hMKlwDFkv9vCBcPv-nYU22UM67Ux6emAtf1g1Yw9i8EfOkbuqURir66jtcnwh3HLPSYMAEyADxYtYAxG9Ca-HhdXXsvnQxhd4P0h2ctgg0_NLTO6WRX47C3GNheLmq0tNttFXya0mHhcElSPQFZftzGw8ZvxTQ"
+      },
+    "kubernetes": {
+      "kubeconfig": "/etc/cni/net.d/genie-kubeconfig"
     }
+}
 ```
-
-The key, value pair is then used in the definition of the ‘Pod’ object, as the user creates his workload, to specify the logical network of choice for a given workload. An example of a how this can be done is depicted in the following:
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: two-containers2
-spec:
-  restartPolicy: Never
-  containers:
-  - name: nginx-container
-    image: nginx
-    ports:
-      - containerPort: 80
-    env:
-      - name: CNI_NETWORK_CONFIG
-        valueFrom:
-          configMapKeyRef:
-            name: canal-config-file
-            key: cni_network_config
-```
-
 ## Detailed workflow
 
--	Once the pod is submitted to Kubernetes (Step 1), the scheduler selects a slave node to host the pod
--	At this point the kubelet on the host node gets triggered (Step 2) and 
--	sends a query to the CNI plugin, in this case CNI Genie, to get an IP address for the pod (Step 3)
--	The “Pod Name” is included in the body of the query message. CNI Genie uses the “Pod Name” to make a call to api-server to retrieve the name of the logical network selected by the user (Step 4)
--	CNI Genie uses the name of the logical network is retrieved to identify CNI plugin of choice and the network configuration file that should be passed to the CNI plugin (Step 5)
--	CNI Genie in turn sends a query to CNI plugin of choice using CNI messaging standard and gets back the IP address that should be used for the pod (Step 6)
+A detailed illustration of the workflow is given in the following figure:
 
-A detailed illustration of the above described workflow is given in the following figure:
+![](CNIGenieDetailedWorkflow.png)
 
-![](workflow.png)
+* 1.	a “Pod” object is submitted to API Server by the user
+* 2.	Scheduler schedules the pod to one of the slave nodes
+* 3.	Kubelet of the slave node picks up the pod from API Server and creates corresponding container
+* 4.	Kubelet passes the following to CNI-Genie
+  * a.	CNI_COMMAND
+  * b.	CNI_CONTAINERID
+  * c.	CNI_NETNS
+  * d.	CNI_ARGS (K8S_POD_NAMESPACE, K8S_POD_NAME)
+  * e.	CNI_IFNAME (always eth0, please see kubernetes/pkg/kubelet/network/network.go)
+* 5.	CNI-Genie queries API Server with K8S_POD_NAMESPACE, K8S_POD_NAME to get the “pod” object, from which it parses “cni” plugin type, e.g., canal, weave 
+* 6.	CNI-Genie queries the cni plugin of choice with parameters from Step 4 to get IP Address(es) for the pod
+* 7.	CNI-Genie returns the IP Address(es) to Kubelet
+* 8.	Kubelet updates the “Pod” object with the IP Address(es) passed from CNI-Genie
+
