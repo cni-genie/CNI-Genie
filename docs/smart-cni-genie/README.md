@@ -5,12 +5,18 @@
 # Use Case
 
 * Upon creating a pod, the user can manually select the logical network, or multiple logical networks, that the pod should be added to
-*	If upon creating a pod no logical network is included in the yaml configuration, CNI Genie will automatically select one of the available CNI plugins
-   *	CNI Genie maintains a list of KPIs for all available CNI plugins. Examples of such KPIs are occupancy rate, number of subnets, response times
+*	Alternatively, the use can decide to include no logical network in pod yaml configuration. In this case, CNI-Genie smartly selects one of the available CNI plugins
+*	For this purpose, CNI-Genie should maintain a list of KPIs for all available CNI plugins. Examples of such KPIs are 
+  * Network latency
+  * Network bandwidth
+  * End-to-end response time  
+  * Percentage of IP addresses used (# of IP addresses used / Total # of IP addresses)
+  * Occupancy rate
+  * A questionnaire filled out by the user to find use-case-optimized CNI plugin
 
 # How it should work
 
-In this case user leaves CNI-Genie to decide ideal logical network to be picked up for the pod. For this user just defines "cni: genie" in the pod definition.
+In this case user leaves it to CNI-Genie to decide ideal logical network to be selected for a pod. The pod yaml looks like this:
 
 ```yaml
 apiVersion: v1
@@ -30,13 +36,19 @@ spec:
         - containerPort: 6379
 ```
 
-CNI-Genie uses a **criterion** to choose the best network. Following are few options we can look at (not limited to only this list):
+# High level design for selection based on "Network Bandwidth" usage
+   
+* Option 1: Measure bandwidth usage via [iperf3](https://iperf.fr/).
 
-   * Option 1: Percentage of **IP addresses used vs available**: Crude example just for the understanding goes this way - Cosider a node with Canal and Weave networks. Canal's IP usage is 90% and weave's IP usage is 10%. Then a new pod definition from user would be connected to weave.
-   * Option 2: Current **network performance** (delay, bandwidth, jitter). Idea is to measure and log bandwidth usage through iperf3.
+In this case, we run a pair of iperf3 client & server pods on every available plugin. The iperf3 client is used to measure the bandwidth usage for a given plugin. 
        
-       ![image](iperf3-test.png)
+    ![image](iperf3-test.png)
        
-   * Option 3: Questionnaire - <more to be identified>
+* Option 2: Measure bandwidth usage via [fasthall perf_test](https://github.com/fasthall/container-network)
 
+This tool helps monitor bandwidth usage of containers. In CNI-Genie for a given plugin the bandwidth usage of all of the containers using that plugin is measured.
 
+Note: both Option 1 and 2 can be used to
+  * Either periodically meaure and log bandwidth usage and CNI-Genie can **retreive the logs** when needed
+  * Or to meaure bandwidth usage on-the-fly and CNI-Genie can **compare real-time measures** when needed
+  
