@@ -38,18 +38,17 @@ spec:
 
 # High level design for selection based on "Network Bandwidth" usage
    
-* Option 1: Measure bandwidth usage via [iperf3](https://iperf.fr/).
+- Option 1: Measure bandwidth usage via [iperf3](https://iperf.fr/)
 
 In this case, we run a pair of iperf3 client & server pods on every available plugin. The iperf3 client is used to measure the bandwidth usage for a given plugin. 
        
     ![image](iperf3-test.png)
-       
-* Option 2: Measure bandwidth usage via [fasthall perf_test](https://github.com/fasthall/container-network)
+    
+- Option 2: Measure bandwidth usage via [fasthall perf_test](https://github.com/fasthall/container-network)
 
 This tool helps monitor bandwidth usage of containers. In CNI-Genie for a given plugin the bandwidth usage of all of the containers using that plugin is measured.
 
 Note: both Option 1 and 2 can be used to
 
- * Either periodically meaure and log bandwidth usage and CNI-Genie can **retreive the logs** when needed
- * Or to meaure bandwidth usage on-the-fly and CNI-Genie can **compare real-time measures** when needed
-  
+    - Either periodically meaure and log bandwidth usage and CNI-Genie can **retreive the logs** when needed
+    - Or to meaure bandwidth usage on-the-fly and CNI-Genie can **compare real-time measures** when needed
