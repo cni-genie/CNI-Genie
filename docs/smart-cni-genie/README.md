@@ -50,5 +50,6 @@ This tool helps monitor bandwidth usage of containers. In CNI-Genie for a given 
 
 ## Note: both Option 1 and 2 can be used to
 Periodically meaure and log bandwidth usage (CNI-Genie retreives the logs when needed)
-- Or
+**Or**
+
 Meaure bandwidth usage on-the-fly (CNI-Genie compares real-time measures when needed)
