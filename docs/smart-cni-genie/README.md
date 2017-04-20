@@ -2,7 +2,7 @@
 
 # Feature 3: CNI-Genie "Smart CNI Plugin Selection"
 
-# Use Case
+# Introduction
 
 K8s User assets:
   - External User assets of each K8s User.
