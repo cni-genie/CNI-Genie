@@ -46,7 +46,7 @@ In this case, we run a pair of iperf3 client & server pods on every available pl
     
 - Option 2: Measure bandwidth usage via [fasthall perf_test](https://github.com/fasthall/container-network)
 
-This tool helps monitor bandwidth usage of containers. In CNI-Genie for a given plugin the bandwidth usage of all of the containers using that plugin is measured.
+This tool helps monitor bandwidth usage of containers. In this case, for every plugin we measure the bandwidth usage of all of the containers using that plugin.
 
 ## Note: both Option 1 and 2 can be used to
 Periodically meaure and log bandwidth usage (CNI-Genie retreives the logs when needed)
