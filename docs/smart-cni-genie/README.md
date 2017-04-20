@@ -4,6 +4,11 @@
 
 # Use Case
 
+K8s User assets:
+  - External User assets of each K8s User.
+  - things private to the K8s app, like:
+    - credentials for accessing other services (docker private repos
+
 - Upon creating a pod, the user can manually select the logical network, or multiple logical networks, that the pod should be added to
 -	Alternatively, the use can decide to include no logical network in pod yaml configuration. In this case, CNI-Genie smartly selects one of the available CNI plugins
 -	For this purpose, CNI-Genie should maintain a list of KPIs for all available CNI plugins. Examples of such KPIs are
