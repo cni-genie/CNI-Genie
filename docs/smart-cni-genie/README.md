@@ -36,7 +36,7 @@ spec:
         - containerPort: 6379
 ```
 
-# High level design for selection based on "Network Bandwidth" usage
+# Available options for CNI plugin selection based on "Network Bandwidth" usage
    
 - Option 1: Measure bandwidth usage via [iperf3](https://iperf.fr/)
 
