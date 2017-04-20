@@ -6,7 +6,8 @@
 
 * Upon creating a pod, the user can manually select the logical network, or multiple logical networks, that the pod should be added to
 *	Alternatively, the use can decide to include no logical network in pod yaml configuration. In this case, CNI-Genie smartly selects one of the available CNI plugins
-*	For this purpose, CNI-Genie should maintain a list of KPIs for all available CNI plugins. Examples of such KPIs are 
+*	For this purpose, CNI-Genie should maintain a list of KPIs for all available CNI plugins. Examples of such KPIs are
+
   *  Network latency
   *  Network bandwidth
   *  End-to-end response time  
@@ -49,6 +50,7 @@ In this case, we run a pair of iperf3 client & server pods on every available pl
 This tool helps monitor bandwidth usage of containers. In CNI-Genie for a given plugin the bandwidth usage of all of the containers using that plugin is measured.
 
 Note: both Option 1 and 2 can be used to
+
   *  Either periodically meaure and log bandwidth usage and CNI-Genie can **retreive the logs** when needed
   *  Or to meaure bandwidth usage on-the-fly and CNI-Genie can **compare real-time measures** when needed
   
