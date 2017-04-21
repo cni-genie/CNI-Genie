@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
+	"github.com/containernetworking/cni/pkg/version"
 	. "github.com/projectcalico/cni-plugin/utils"
 	"github.com/projectcalico/cni-plugin/utils"
 	"github.com/containernetworking/cni/pkg/ipam"
@@ -75,7 +76,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
-	var result *types.Result
+	var result types.Result
 
 	i := 0
 	for i < len(annotStringArray) {
@@ -122,7 +123,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "CNI Genie result= %s\n", result)
-	return result.Print()
+	return types.PrintResult(result,VERSION)
 }
 
 func cmdDel(args *skel.CmdArgs) error {
@@ -302,11 +303,12 @@ func newK8sClient(conf utils.NetConf, logger *log.Entry) (*kubernetes.Clientset,
 	return kubernetes.NewForConfig(config)
 }
 
-// VERSION is filled out during the build process (using git describe output)
-var VERSION string
+var VERSION = "0.3.1"
+var versionInfo     version.PluginInfo
 
 func main() {
 	// Display the version on "-v", otherwise just delegate to the skel code.
 	// Use a new flag set so as not to conflict with existing libraries which use "flag"
-	skel.PluginMain(cmdAdd, cmdDel)
+	versionInfo = version.PluginSupports(VERSION)
+	skel.PluginMain(cmdAdd, cmdDel,versionInfo)
 }
