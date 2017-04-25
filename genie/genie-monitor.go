@@ -13,8 +13,8 @@
 package main
 
 import (
-	"fmt"
-	"os/exec"
+	//"fmt"
+	//"os/exec"
 	"runtime"
 )
 
@@ -26,7 +26,7 @@ func init() {
 
 }
 
-
+/*
 func main() {
 
 	cmd := exec.Command("python", "-c", "import monitor; print monitor.monitorContainerNetworkSpeeds()")
@@ -40,4 +40,5 @@ func main() {
 	fmt.Println("Uplink bandwidth: ", string(out))
 	fmt.Println("...done")
 }
+*/
 
