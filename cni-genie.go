@@ -20,8 +20,6 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"
-	. "github.com/projectcalico/cni-plugin/utils"
-	"github.com/projectcalico/cni-plugin/utils"
 	"github.com/containernetworking/cni/pkg/ipam"
 	"k8s.io/client-go/kubernetes"
 	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
@@ -29,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"strings"
 	"strconv"
+	. "CNI-Genie/utils"
 )
 
 var hostname string
@@ -123,7 +122,8 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "CNI Genie result= %s\n", result)
-	return types.PrintResult(result,VERSION)
+	return types.PrintResult(result,conf.CNIVersion)
+	//return result.Print()
 }
 
 func cmdDel(args *skel.CmdArgs) error {
@@ -158,7 +158,6 @@ func cmdDel(args *skel.CmdArgs) error {
 	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
 	annotStringArray := strings.Split(annot["cni"], ",")
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
-
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var ipamErr error
@@ -210,7 +209,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	return ipamErr
 }
 
-func getK8sLabelsAnnotations(client *kubernetes.Clientset, k8sargs utils.K8sArgs) (map[string]string, map[string]string, error) {
+func getK8sLabelsAnnotations(client *kubernetes.Clientset, k8sargs K8sArgs) (map[string]string, map[string]string, error) {
 	pod, err := client.Pods(string(k8sargs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sargs.K8S_POD_NAME), metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
@@ -254,7 +253,7 @@ func getIdentifiers(args *skel.CmdArgs) (workloadID string, orchestratorID strin
 	return workloadID, orchestratorID, nil
 }
 
-func newK8sClient(conf utils.NetConf, logger *log.Entry) (*kubernetes.Clientset, error) {
+func newK8sClient(conf NetConf, logger *log.Entry) (*kubernetes.Clientset, error) {
 	// Some config can be passed in a kubeconfig file
 	kubeconfig := conf.Kubernetes.Kubeconfig
 
@@ -303,12 +302,7 @@ func newK8sClient(conf utils.NetConf, logger *log.Entry) (*kubernetes.Clientset,
 	return kubernetes.NewForConfig(config)
 }
 
-var VERSION = "0.3.1"
-var versionInfo     version.PluginInfo
 
 func main() {
-	// Display the version on "-v", otherwise just delegate to the skel code.
-	// Use a new flag set so as not to conflict with existing libraries which use "flag"
-	versionInfo = version.PluginSupports(VERSION)
-	skel.PluginMain(cmdAdd, cmdDel,versionInfo)
+	skel.PluginMain(cmdAdd, cmdDel,version.All)
 }
