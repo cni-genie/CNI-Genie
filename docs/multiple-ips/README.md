@@ -13,9 +13,25 @@
 * Step 1: same as Step 1 in [README.md](../multiple-cni-plugins/README.md) 
   
 * Step 2:
-  * User inputs his network(s) of choice in **pod annotations**
+  * User inputs his network(s) of choice in **pod annotations**. For instance, the following yaml configurations can be used to get 2 IP addresses one from Weave and one from Canal:
   
-    ![image](multiple-ips-how-step2.PNG)
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-multiips
+  labels:
+    app: web
+  annotations:
+    cni: "weave,canal"
+spec:
+  containers:
+    - name: key-value-store
+      image: nginx:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 6379
+```
 
 * Step 3: same as Step 3 in [README.md](../multiple-cni-plugins/README.md)
 
