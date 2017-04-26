@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"strings"
 	"strconv"
-	. "Huawei-PaaS/CNI-Genie/utils"
+	. "github.com/Huawei-PaaS/CNI-Genie/utils"
 )
 
 var hostname string
