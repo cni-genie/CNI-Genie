@@ -44,4 +44,3 @@ type K8sArgs struct {
 	K8S_POD_NAMESPACE          types.UnmarshallableString
 	K8S_POD_INFRA_CONTAINER_ID types.UnmarshallableString
 }
-
