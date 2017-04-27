@@ -202,7 +202,18 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 	glog.V(6).Info("m==>", m)
 	//sort by values of map
 	cns := SortedKeys(m)
+	for i, c := range cns {
+		if c == "weav" {
+			cns[i] = "weave"
+		} else if c == "flan" {
+			cns[i] = "canal"
+		} else if c == "cali" {
+			cns[i] = "calico"
+		}
+	}
 	fmt.Println("cns==>", cns)
+
+
 	//fmt.Println("cns==>", cns)
 	return cns
 }

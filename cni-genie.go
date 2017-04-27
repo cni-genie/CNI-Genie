@@ -28,51 +28,26 @@ import (
 	"strings"
 	"strconv"
 	. "github.com/Huawei-PaaS/CNI-Genie/utils"
+	//genie "github.com/Huawei-PaaS/CNI-Genie/genie"
+	"github.com/Huawei-PaaS/CNI-Genie/genie"
 )
-
-var hostname string
 
 func init() {
 	// This ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we
 	// must ensure that the goroutine does not jump from OS thread to thread
 	runtime.LockOSThread()
-
-	hostname, _ = os.Hostname()
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
+
 	// Unmarshall the network config, and perform validation
 	conf := NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
 	}
 
-	workload, _, err := getIdentifiers(args)
-	if err != nil {
-		return err
-	}
-
-	// Allow the hostname to be overridden by the network config
-	if conf.Hostname != "" {
-		hostname = conf.Hostname
-	}
-
-	logger := createContextLogger(workload)
-	client, err := newK8sClient(conf, logger)
-	if err != nil {
-		return err
-	}
-	k8sArgs := K8sArgs{}
-	err = types.LoadArgs(args.Args, &k8sArgs)
-	if err != nil {
-		return err
-	}
-	annot := make(map[string]string)
-	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
-	annotStringArray := strings.Split(annot["cni"], ",")
-	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
-
+	annotStringArray, err := getAnnotStringArray(args)
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var result types.Result
@@ -127,6 +102,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
+	// Unmarshall the network config, and perform validation
 	conf := NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
@@ -134,30 +110,8 @@ func cmdDel(args *skel.CmdArgs) error {
 
 	fmt.Fprintf(os.Stderr, "CNI Genie releasing IP address\n")
 
-	workload, _, err := getIdentifiers(args)
-	if err != nil {
-		return err
-	}
+	annotStringArray, _ := getAnnotStringArray(args)
 
-	// Allow the hostname to be overridden by the network config
-	if conf.Hostname != "" {
-		hostname = conf.Hostname
-	}
-
-	logger := createContextLogger(workload)
-	client, err := newK8sClient(conf, logger)
-	if err != nil {
-		return err
-	}
-	k8sArgs := K8sArgs{}
-	err = types.LoadArgs(args.Args, &k8sArgs)
-	if err != nil {
-		return err
-	}
-	annot := make(map[string]string)
-	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
-	annotStringArray := strings.Split(annot["cni"], ",")
-	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var ipamErr error
@@ -207,6 +161,54 @@ func cmdDel(args *skel.CmdArgs) error {
 	}
 
 	return ipamErr
+}
+
+func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
+	// Unmarshall the network config, and perform validation
+	var annotStringArray []string
+	conf := NetConf{}
+	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
+		return annotStringArray, fmt.Errorf("failed to load netconf: %v", err)
+	}
+	workload, _, err := getIdentifiers(args)
+	if err != nil {
+		return annotStringArray, err
+	}
+
+	logger := createContextLogger(workload)
+	client, err := newK8sClient(conf, logger)
+	if err != nil {
+		return annotStringArray, err
+	}
+	k8sArgs := K8sArgs{}
+	err = types.LoadArgs(args.Args, &k8sArgs)
+	if err != nil {
+		return annotStringArray, err
+	}
+	annot := make(map[string]string)
+	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
+	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
+	annotStringArray = strings.Split(annot["cni"], ",")
+	if annotStringArray[0] == "" {
+		annotStringArray, _ = genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
+		//TODO (Kaveh): Handle nil case here.
+		/*if annotStringArray != nil {
+
+		}*/
+		//annotStringArray[0] = "weave"
+		fmt.Fprintf(os.Stderr, "CNI Genie annotStringArray= %s\n", annotStringArray)
+		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+		pod.Annotations["cni"] = annotStringArray[0]
+		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n",pod.Annotations["cni"])
+		pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+		if err != nil {
+			fmt.Errorf("Error updating pod = %s", err)
+		}
+		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n",podTmp.Annotations["cni"])
+	}
+
+	return annotStringArray, err
 }
 
 func getK8sLabelsAnnotations(client *kubernetes.Clientset, k8sargs K8sArgs) (map[string]string, map[string]string, error) {
