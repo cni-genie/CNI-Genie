@@ -28,7 +28,6 @@ import (
 	"strings"
 	"strconv"
 	. "github.com/Huawei-PaaS/CNI-Genie/utils"
-	//genie "github.com/Huawei-PaaS/CNI-Genie/genie"
 	"github.com/Huawei-PaaS/CNI-Genie/genie"
 )
 
@@ -207,7 +206,6 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n",podTmp.Annotations["cni"])
 	}
-
 	return annotStringArray, err
 }
 
