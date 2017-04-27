@@ -21,18 +21,20 @@
 //   client, err := client.NewClient("http://192.168.59.103:8080/")
 // Then, the client interface exposes go methods corresponding to the REST endpoints.
 
-package main
+package genie
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"path"
 	"strings"
 	"github.com/google/cadvisor/info/v1"
 	"github.com/golang/glog"
+	. "github.com/Huawei-PaaS/CNI-Genie/utils"
 	"time"
 	"flag"
 )
@@ -59,7 +61,6 @@ func newClient(url string, client *http.Client) (*Client, error) {
 	if !strings.HasSuffix(url, "/") {
 		url += "/"
 	}
-
 	return &Client{
 		baseUrl:    fmt.Sprintf("%sapi/v1.3/", url),
 		httpClient: client,
@@ -91,16 +92,6 @@ func (self *Client) ContainerInfo(name string, query *v1.ContainerInfoRequest) (
 	return
 }
 
-type ContainerInfoGenie struct {
-	// Historical statistics gathered from the container.
-	Stats []ContainerStatsGenie `json:"stats,omitempty"`
-}
-
-type ContainerStatsGenie struct {
-	// The time of this stat point.
-	Timestamp time.Time    `json:"timestamp"`
-	Network   v1.NetworkStats `json:"network,omitempty"`
-}
 
 // Returns the JSON container information for the specified
 // Docker container and request.
@@ -135,7 +126,6 @@ func (self *Client) httpGetJsonData(data, postData interface{}, url, infoName st
 	} else {
 		resp, err = self.httpClient.Get(url)
 	}
-	fmt.Println("*** resp=",resp)
 	if err != nil {
 		return fmt.Errorf("unable to get %q from %q: %v", infoName, url, err)
 	}
@@ -159,37 +149,83 @@ func (self *Client) httpGetJsonData(data, postData interface{}, url, infoName st
 	return nil
 }
 
-func computeNetworkUsage(cinfo []ContainerStatsGenie) (string) {
-	cns := make(map[string]uint64)
+// This is getting overcomplicated
+/**
+This method returns string array of network solutions with ascending order of downlink usage.
+eg: flannel=350, calico=250, weave=150
+
+It returns {weave, calico, flannel}
+
+*/
+func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
+	//default ranks of usage
+	//TODO (Karun): This is just a simple way of ranking. Needs improvement.
+	//go with flannel as first preference, calico as second
+	// weave as third
+	m := make(map[string]int)
+	m["flan"] 	= 1
+	m["cali"] 	= 2
+	m["weav"] 	= 3
+
+
+	rx := make(map[string]uint64)
+	//tx := make(map[string]uint64)
+
 	for i, c := range cinfo {
-		if i == len(cinfo)-1 {
-			for _, intf := range c.Network.Interfaces {
-				cns[intf.Name] = intf.RxBytes
-				fmt.Println("intf name=", intf.RxBytes)
+		use := []InterfaceBandwidthUsage{}
+		glog.V(6).Info("==== i=", i)
+		for _, intf := range c.Network.Interfaces {
+			var downlink uint64
+			//var uplink uint64
+			if _, ok := m[intf.Name[:4]]; ok {
+				//fmt.Println("TxBytes=", intf.TxBytes)
+
+				if oldrx, ok := rx[intf.Name]; ok {
+					glog.V(6).Info("intfname=", intf.Name[:4])
+					glog.V(6).Info("RxBytes=", intf.RxBytes)
+					glog.V(6).Info("oldrx=", oldrx)
+					downlink = math.Float64bits(math.Abs(math.Float64frombits(intf.RxBytes) - math.Float64frombits(oldrx)))
+				}
+				rx[intf.Name] = intf.RxBytes
+
+				/*if oldtx, ok := tx[intf.Name]; ok {
+					uplink = math.Float64bits(math.Abs(math.Float64frombits(intf.TxBytes) - math.Float64frombits(oldtx)))
+					tx[intf.Name] = intf.TxBytes
+				}*/
+				use = append(use,InterfaceBandwidthUsage{IntName: intf.Name, DownLink: downlink})
+				m[intf.Name[:4]] = int(downlink)
+				//use = append(use,InterfaceBandwidthUsage{IntName: intf.Name, DownLink: downlink, UpLink: uplink})
 			}
 		}
-
+		glog.V(6).Info("use==>", use)
 	}
+	glog.V(6).Info("m==>", m)
+	//sort by values of map
+	cns := SortedKeys(m)
 	fmt.Println("cns==>", cns)
-	return ""
+	//fmt.Println("cns==>", cns)
+	return cns
 }
 
-// Returns JSON response of CNS.
-// {
-//       ""
-func GetCNSOrderByNetworkBandwith(cAdvisorURL string, numStats int) (string,error) {
+/**
+Returns array of strings with network solutions in descending order of network usage.
+input
+	- cAdvisorURL : http://127.0.0.1:4194 or http://<nodeip>:4194
+	- numStats : int (number of stats needed default 3)
+ */
+func GetCNSOrderByNetworkBandwith(cAdvisorURL string, numStats int) ([]string,error) {
 	if cAdvisorURL == "" {
-		return "", fmt.Errorf("cAdvisorURL is empty. Should be eg: http://127.0.0.1:4194")
+		return nil, fmt.Errorf("cAdvisorURL is empty. Should be eg: http://127.0.0.1:4194")
 	}
 	if numStats <= 0 {
-		numStats = 10
+		numStats = 3
 	}
 
 	staticClient, err := NewClient(cAdvisorURL)
-	fmt.Println("staticClient=", staticClient)
+	glog.V(6).Info("staticClient=", staticClient)
 	if err != nil {
 		glog.Errorf("tried to make client and got error %v", err)
-		return "", err
+		return nil, err
 	}
 
 	query := v1.ContainerInfoRequest{NumStats: numStats}
@@ -197,20 +233,20 @@ func GetCNSOrderByNetworkBandwith(cAdvisorURL string, numStats int) (string,erro
 	cinfo, err := staticClient.GetDockerContainers(&query)
 	if err != nil {
 		glog.Errorf("got error retrieving event info: %v", err)
-		return "", err
+		return nil, err
 	}
-	jsonRes := computeNetworkUsage(cinfo)
+	res := computeNetworkUsage(cinfo)
 
-	return jsonRes,nil
+	return res,nil
 
 }
 
 func staticContainersClientExample() {
-	cns,err := GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194/", 10)
+	cns,err := GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194/", 3)
 	if err != nil {
 		glog.Errorf("got error while fetching CNS: %v", err)
 	}
-	fmt.Println("cns=", cns)
+	glog.V(6).Info("cns=", cns)
 
 }
 
