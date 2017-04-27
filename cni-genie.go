@@ -28,7 +28,7 @@ import (
 	"strings"
 	"strconv"
 	. "github.com/Huawei-PaaS/CNI-Genie/utils"
-	//genie "github.com/Huawei-PaaS/CNI-Genie/genie"
+	"github.com/Huawei-PaaS/CNI-Genie/genie"
 )
 
 func init() {
@@ -189,16 +189,23 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
 	annotStringArray = strings.Split(annot["cni"], ",")
 	if annotStringArray[0] == "" {
-		//annotStringArray[0], _ = genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
-		annotStringArray[0] = "weave"
+		annotStringArray, _ = genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
+		//TODO (Kaveh): Handle nil case here.
+		/*if annotStringArray != nil {
+
+		}*/
+		//annotStringArray[0] = "weave"
+		fmt.Fprintf(os.Stderr, "CNI Genie annotStringArray= %s\n", annotStringArray)
 		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		pod.Annotations["cni"] = annotStringArray[0]
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n",pod.Annotations["cni"])
-		client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+		pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+		if err != nil {
+			fmt.Errorf("Error updating pod = %s", err)
+		}
 		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n",podTmp.Annotations["cni"])
 	}
-	
 	return annotStringArray, err
 }
 
