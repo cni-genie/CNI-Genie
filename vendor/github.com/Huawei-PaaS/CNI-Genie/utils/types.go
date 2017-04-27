@@ -2,9 +2,32 @@ package utils
 
 import (
 	"net"
+	c "github.com/google/cadvisor/info/v1"
 	"github.com/containernetworking/cni/pkg/types"
 	v1 "github.com/projectcalico/cni-plugin/utils"
+	"time"
 )
+
+type ContainerInfoGenie struct {
+	// Historical statistics gathered from the container.
+	Stats []ContainerStatsGenie `json:"stats,omitempty"`
+}
+
+type ContainerStatsGenie struct {
+	// The time of this stat point.
+	Timestamp time.Time    `json:"timestamp"`
+	Network   c.NetworkStats `json:"network,omitempty"`
+}
+
+type InterfaceBandwidthUsage struct {
+	IntName string
+	UpLink uint64
+	DownLink uint64
+}
+
+type AllInterfaces struct {
+	Interfaces []c.InterfaceStats
+}
 
 // NetConf stores the common network config for Calico CNI plugin
 type NetConf struct {
