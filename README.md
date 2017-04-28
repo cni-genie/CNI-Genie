@@ -14,7 +14,7 @@ Here is a 6 minute demo video that demonstrates 3 scenarios
 2. Assign multi-IP to pod from multiple network solutions eg: Get 1 IP from "Weave" 2nd IP from "Canal"
 3. Assign IP to pod from IDEAL network solution eg: Canal has less load, CNI-Genie assigns IP to pod from Canal
 
-[![Demo](https://asciinema.org/a/118185.png)](https://asciinema.org/a/118185)
+[![asciicast](https://asciinema.org/a/118191.png)](https://asciinema.org/a/118191)
 
 ## Contributing
 We always welcome contributions to our little experiment. 
