@@ -8,11 +8,13 @@ CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kuber
 
 ***Also please note that this initial proto-type is tested only with Kubernetes build. Mesos will be coming soon...***
 
+## Demo
 Here is a 6 minute demo video that demonstrates 3 scenarios
-1. Assign IP to pod from a specified networking solution say "WEAVE"
-2. Assign multi-IP to pod, with IPs assigned from different networking solutions say 1 IP from "WEAVE" and another IP from "CANAL"
-3. Assign IP to pod from best available networking solutions running on the node 
-![Demo](CNI-Genie-Demo-1.gif)
+1. Assign IP to pod from a particular network solution eg; Get IP from "Weave"
+2. Assign multi-IP to pod from multiple network solutions eg: Get 1 IP from "Weave" 2nd IP from "Canal"
+3. Assign IP to pod from IDEAL network solution eg: Canal has less load, CNI-Genie assigns IP to pod from Canal
+
+[![Demo](https://asciinema.org/a/118185.png)](https://asciinema.org/a/118185)
 
 ## Contributing
 We always welcome contributions to our little experiment. 
