@@ -52,10 +52,3 @@ In this case, we run a pair of iperf3 client & server pods on every available pl
 This tool helps monitor bandwidth usage of containers. In this case, for every plugin we measure the bandwidth usage of all of the containers using that plugin.
 
 - Option 3: Write a cAdvisor client that collects network usage information from every container. Comput the uplink and downlink w.r.t each network solution. Order the network solutions in the ascending order of their usage in every node. CNI-Genie to pickup the network solution that's least used in the node for pod networking.
-
-## Note: both Option 1 and 2 can be used to
-Periodically meaure and log bandwidth usage (CNI-Genie retreives the logs when needed)
-
-**Or**
-
-Meaure bandwidth usage on-the-fly (CNI-Genie compares real-time measures when needed)
