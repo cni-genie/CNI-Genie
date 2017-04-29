@@ -47,8 +47,6 @@ In this case, we run a pair of iperf3 client & server pods on every available pl
        
 ![image](iperf3-test.png)
     
-- Option 2: Measure bandwidth usage via [fasthall perf_test](https://github.com/fasthall/container-network) [WE ARE NOT TAKING THIS APPROACH]
+- Option 2: Measure bandwidth usage of containers
 
-This tool helps monitor bandwidth usage of containers. In this case, for every plugin we measure the bandwidth usage of all of the containers using that plugin.
-
-- Option 3: Write a cAdvisor client that collects network usage information from every container. Comput the uplink and downlink w.r.t each network solution. Order the network solutions in the ascending order of their usage in every node. CNI-Genie to pickup the network solution that's least used in the node for pod networking.
+In this case, for every plugin we measure the bandwidth usage of all of the containers using that plugin. We write a [cAdvisor](https://github.com/google/cadvisor) client that collects network usage information from every container, computes uplink and downlink bandwidth usage of each plugin, orders the plugins in the ascending order of their usage in every node. CNI-Genie then selects the plugin that is the least used in the node for pod networking.
