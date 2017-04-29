@@ -8,10 +8,10 @@
 **Feature 2: CNI-Genie "Multiple IP Addresses"**
 * Injects multiple IPs to a single container. The container is reachable using any of the [multiple IP Addresses](multiple-ips/README.md)
 
-## Future features
-
 **Feature 3: CNI-Genie "Smart CNI Plugin Selection"**
 * Intelligence in selecting Container Networking Solution(s) (CNS). [CNI-Genie smartly selects](smart-cni-genie/README.md) one (or more) of the existing CNSs on the host node
+
+## Future features
 
 **Feature 4: CNI-Genie "Network Policy Engine"**
 * [CNI-Genie network policy engine](network-policy/README.md) allows for network level ACLs 
