@@ -189,6 +189,7 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
 	annotStringArray = strings.Split(annot["cni"], ",")
 	if annotStringArray[0] == "" {
+		//TODO (Karun): Get cAdvisor URL from genie conf file /etc/cni/net.d
 		annotStringArray, _ = genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
 		//TODO (Kaveh): Handle nil case here.
 		/*if annotStringArray != nil {
