@@ -208,7 +208,10 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 		} else if c == "flan" {
 			cns[i] = "canal"
 		} else if c == "cali" {
-			cns[i] = "calico"
+			// TODO (Karun): This is a bad fix.
+			// Calico bin wasn't working correctly
+			//cns[i] = "calico"
+			cns[i] = "canal"
 		}
 	}
 	fmt.Println("cns==>", cns)
