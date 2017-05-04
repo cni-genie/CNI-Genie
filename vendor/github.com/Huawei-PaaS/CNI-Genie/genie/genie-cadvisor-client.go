@@ -208,7 +208,7 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 		} else if c == "flan" {
 			cns[i] = "canal"
 		} else if c == "cali" {
-			cns[i] = "calico"
+			cns[i] = "canal"
 		}
 	}
 	fmt.Println("cns==>", cns)
