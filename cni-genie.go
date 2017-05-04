@@ -29,6 +29,7 @@ import (
 	"strconv"
 	. "github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/Huawei-PaaS/CNI-Genie/genie"
+	"github.com/golang/glog"
 )
 
 func init() {
@@ -46,14 +47,17 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return fmt.Errorf("failed to load netconf: %v", err)
 	}
 
-	annotStringArray, err := getAnnotStringArray(args)
+	annots, err := getAnnotStringArray(args)
+
+	if err != nil {
+		return fmt.Errorf("cni genie internal error: %v", err)
+	}
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var result types.Result
 
-	i := 0
-	for i < len(annotStringArray) {
-		switch annotStringArray[i] {
+	for i,ele := range annots {
+		switch ele {
 		case "weave":
 			conf.IPAM.Type = "weave-ipam"
 			conf.Type = "weave-net"
@@ -109,15 +113,17 @@ func cmdDel(args *skel.CmdArgs) error {
 
 	fmt.Fprintf(os.Stderr, "CNI Genie releasing IP address\n")
 
-	annotStringArray, _ := getAnnotStringArray(args)
+	annots, err := getAnnotStringArray(args)
 
+	if err != nil {
+		return fmt.Errorf("cni genie internal error: %v", err)
+	}
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var ipamErr error
 
-	i := 0
-	for i < len(annotStringArray) {
-		switch annotStringArray[i] {
+	for i,ele := range annots {
+		switch ele {
 		case "weave":
 			conf.IPAM.Type = "weave-ipam"
 			conf.Type = "weave-net"
@@ -164,50 +170,55 @@ func cmdDel(args *skel.CmdArgs) error {
 
 func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 	// Unmarshall the network config, and perform validation
-	var annotStringArray []string
+	var annots []string
+	var finalAnnots []string
 	conf := NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
-		return annotStringArray, fmt.Errorf("failed to load netconf: %v", err)
+		return annots, fmt.Errorf("CNI Genie failed to load netconf: %v", err)
 	}
 	workload, _, err := getIdentifiers(args)
 	if err != nil {
-		return annotStringArray, err
+		return annots, err
 	}
 
 	logger := createContextLogger(workload)
 	client, err := newK8sClient(conf, logger)
 	if err != nil {
-		return annotStringArray, err
+		return annots, err
 	}
 	k8sArgs := K8sArgs{}
 	err = types.LoadArgs(args.Args, &k8sArgs)
 	if err != nil {
-		return annotStringArray, err
+		return annots, err
 	}
 	annot := make(map[string]string)
 	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
-	fmt.Fprintf(os.Stderr, "CNI Genie annot= %s\n", annot)
-	annotStringArray = strings.Split(annot["cni"], ",")
-	if annotStringArray[0] == "" {
-		//TODO (Karun): Get cAdvisor URL from genie conf file /etc/cni/net.d
-		annotStringArray, _ = genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
-		//TODO (Kaveh): Handle nil case here.
-		/*if annotStringArray != nil {
+	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
 
-		}*/
-		//annotStringArray[0] = "weave"
-		fmt.Fprintf(os.Stderr, "CNI Genie annotStringArray= %s\n", annotStringArray)
-		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
-		pod.Annotations["cni"] = annotStringArray[0]
-		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n",pod.Annotations["cni"])
-		pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+	if annot["cni"] == "" {
+		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
+		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
 		if err != nil {
-			fmt.Errorf("Error updating pod = %s", err)
+			return nil, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
+		}
+		fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
+		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n",pod.Annotations["cni"])
+		pod.Annotations["cni"] = cns[0]
+		pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+		if err != nil {
+			fmt.Errorf("CNI Genie Error updating pod = %s", err)
 		}
 		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n",podTmp.Annotations["cni"])
+		finalAnnots = []string {cns[0]}
+	} else {
+		annots = strings.Split(annot["cni"], ",")
+		fmt.Fprintf(os.Stderr, "CNI Genie annots= %v\n", annots)
+		finalAnnots = annots
 	}
-	return annotStringArray, err
+	fmt.Fprintf(os.Stderr, "CNI Genie return finalAnnots = %v\n", finalAnnots)
+	return finalAnnots, err
 }
 
 func getK8sLabelsAnnotations(client *kubernetes.Clientset, k8sargs K8sArgs) (map[string]string, map[string]string, error) {
