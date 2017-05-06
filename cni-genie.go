@@ -101,7 +101,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	fmt.Fprintf(os.Stderr, "CNI Genie result= %s\n", result)
 	return types.PrintResult(result,conf.CNIVersion)
-	//return result.Print()
 }
 
 func cmdDel(args *skel.CmdArgs) error {
@@ -197,6 +196,7 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 
 	if annot["cni"] == "" {
 		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
+		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
 		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
 		if err != nil {
 			return nil, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)

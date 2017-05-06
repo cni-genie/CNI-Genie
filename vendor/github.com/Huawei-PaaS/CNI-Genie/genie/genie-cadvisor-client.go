@@ -215,9 +215,6 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 		}
 	}
 	fmt.Println("cns==>", cns)
-
-
-	//fmt.Println("cns==>", cns)
 	return cns
 }
 
