@@ -5,7 +5,7 @@
 
 GO_PATH=$(GOPATH)
 SRCFILES=cni-genie.go
-TEST_SRCFILES=cni-genie_test.go
+TEST_SRCFILES=$(wildcard cni-genie_*_test.go)
 
 # Ensure that the dist directory is always created
 MAKE_SURE_DIST_EXIST := $(shell mkdir -p dist)
