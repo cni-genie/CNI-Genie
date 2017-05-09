@@ -57,6 +57,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	var result types.Result
 
 	for i,ele := range annots {
+		fmt.Fprintf(os.Stderr, "CNI Genie ele = %v\n", ele)
 		switch ele {
 		case "weave":
 			conf.IPAM.Type = "weave-ipam"
@@ -67,8 +68,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 			}
 			result, err = ipam.ExecAdd("weave-net", args.StdinData)
 			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
 				return err
 			}
+			fmt.Fprintf(os.Stderr, "CNI Genie weave result = %v\n", result)
 		case "calico":
 			conf.IPAM.Type = "calico-ipam"
 			conf.Type = "calico"
@@ -93,10 +96,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 			}
 			result, err = ipam.ExecAdd("flannel", args.StdinData)
 			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
 				return err
 			}
+			fmt.Fprintf(os.Stderr, "CNI Genie canal result = %v\n", result)
 		}
-		i += 1
 	}
 
 	fmt.Fprintf(os.Stderr, "CNI Genie result= %s\n", result)
@@ -161,7 +165,6 @@ func cmdDel(args *skel.CmdArgs) error {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
 		}
-		i += 1
 	}
 
 	return ipamErr
