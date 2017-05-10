@@ -134,7 +134,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 				fmt.Errorf("CNI Genie Error parsing MultiIPPreferencesAnnotation = %s\n", err)
 			}
 			multiIPPreferences.MultiEntry = multiIPPreferences.MultiEntry + 1
-			multiIPPreferences.Ips["ip" + strconv.Itoa(i + 1)] = IPAddressPreferences{"eth" + strconv.Itoa(i), strings.Split((strings.Split(result.String(), "IP4:{IP:{IP:")[1]), " Mask")[0]}
+			multiIPPreferences.Ips["ip" + strconv.Itoa(i + 1)] = IPAddressPreferences{strings.Split((strings.Split(result.String(), "IP4:{IP:{IP:")[1]), " Mask")[0], "eth" + strconv.Itoa(i)}
 			tmpMultiIPPreferences,_ := json.Marshal(&multiIPPreferences)
 			pod.Annotations[MultiIPPreferencesAnnotation] = string(tmpMultiIPPreferences)
 			fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[MultiIPPreferencesAnnotation] after = %v\n", pod.Annotations[MultiIPPreferencesAnnotation])
