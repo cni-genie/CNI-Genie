@@ -24,7 +24,6 @@
 package genie
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -35,8 +34,7 @@ import (
 	"github.com/google/cadvisor/info/v1"
 	"github.com/golang/glog"
 	. "github.com/Huawei-PaaS/CNI-Genie/utils"
-	"time"
-	"flag"
+	"os"
 )
 
 // Client represents the base URL for a cAdvisor client.
@@ -50,13 +48,6 @@ func NewClient(url string) (*Client, error) {
 	return newClient(url, http.DefaultClient)
 }
 
-// NewClientWithTimeout returns a new v1.3 client with the specified base URL and http client timeout.
-func NewClientWithTimeout(url string, timeout time.Duration) (*Client, error) {
-	return newClient(url, &http.Client{
-		Timeout: timeout,
-	})
-}
-
 func newClient(url string, client *http.Client) (*Client, error) {
 	if !strings.HasSuffix(url, "/") {
 		url += "/"
@@ -67,66 +58,40 @@ func newClient(url string, client *http.Client) (*Client, error) {
 	}, nil
 }
 
-// MachineInfo returns the JSON machine information for this client.
-// A non-nil error result indicates a problem with obtaining
-// the JSON machine information data.
-func (self *Client) MachineInfo() (minfo *v1.MachineInfo, err error) {
-	u := self.machineInfoUrl()
-	ret := new(v1.MachineInfo)
-	if err = self.httpGetJsonData(ret, nil, u, "machine info"); err != nil {
-		return
-	}
-	minfo = ret
-	return
-}
-
-// ContainerInfo returns the JSON container information for the specified
-// container and request.
-func (self *Client) ContainerInfo(name string, query *v1.ContainerInfoRequest) (cinfo *v1.ContainerInfo, err error) {
-	u := self.containerInfoUrl(name)
-	ret := new(v1.ContainerInfo)
-	if err = self.httpGetJsonData(ret, query, u, fmt.Sprintf("container info for %q", name)); err != nil {
-		return
-	}
-	cinfo = ret
-	return
-}
-
-
 // Returns the JSON container information for the specified
 // Docker container and request.
-func (self *Client) GetDockerContainers(query *v1.ContainerInfoRequest) (cinfo []ContainerStatsGenie, err error) {
-	u := self.containerInfoUrl("/")
+func GetDockerContainers(url string, query *v1.ContainerInfoRequest) (cinfo []ContainerStatsGenie, err error) {
+	u := containerInfoUrl(url, "/")
 	//ret := make(map[string]ContainerInfoGenie)
 	var containerInfoObj ContainerInfoGenie
-	if err = self.httpGetJsonData(&containerInfoObj, query, u, "get all containers info"); err != nil {
-		return nil, err
+	if err = httpGetJsonData(&containerInfoObj, query, u, "get all containers info"); err != nil {
+		return
 	}
-	return containerInfoObj.Stats, nil
+	cinfo = containerInfoObj.Stats
+	return
 }
 
-func (self *Client) machineInfoUrl() string {
-	return self.baseUrl + path.Join("machine")
+func containerInfoUrl(baseUrl string, name string) string {
+	return baseUrl + path.Join("containers", name)
 }
 
-func (self *Client) containerInfoUrl(name string) string {
-	return self.baseUrl + path.Join("containers", name)
-}
-
-func (self *Client) httpGetJsonData(data, postData interface{}, url, infoName string) error {
+func httpGetJsonData(data, postData interface{}, url, infoName string) error {
 	var resp *http.Response
 	var err error
-
-	if postData != nil {
+	fmt.Fprintf(os.Stderr, "CAdvisor Client Inside httpGetJsonData() = %v\n", data)
+	fmt.Fprintf(os.Stderr, "CAdvisor Client postData = %v\n", postData)
+	/*if postData != nil {
 		data, marshalErr := json.Marshal(postData)
 		if marshalErr != nil {
 			return fmt.Errorf("unable to marshal data: %v", marshalErr)
 		}
-		resp, err = self.httpClient.Post(url, "application/json", bytes.NewBuffer(data))
-	} else {
-		resp, err = self.httpClient.Get(url)
-	}
+		resp, err = client.httpClient.Post(url, "application/json", bytes.NewBuffer(data))
+	} else {*/
+		resp, err = http.DefaultClient.Get(url)
+	//}
+	fmt.Fprintf(os.Stderr, "CAdvisor Client resp = %v\n", resp)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "CAdvisor Client err = %v\n", err)
 		return fmt.Errorf("unable to get %q from %q: %v", infoName, url, err)
 	}
 	if resp == nil {
@@ -134,18 +99,24 @@ func (self *Client) httpGetJsonData(data, postData interface{}, url, infoName st
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+
+	fmt.Fprintf(os.Stderr, "CAdvisor Client body = %v\n", string(body))
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "CAdvisor Client err2 = %v\n", err)
 		err = fmt.Errorf("unable to read all %q from %q: %v", infoName, url, err)
 		return err
 	}
 	if resp.StatusCode != 200 {
+		fmt.Fprintf(os.Stderr, "CAdvisor Client Unmarshal resp.StatusCode = %v\n", resp.StatusCode)
 		return fmt.Errorf("request %q failed with error: %q", url, strings.TrimSpace(string(body)))
 	}
 
 	if err = json.Unmarshal(body, data); err != nil {
+		fmt.Fprintf(os.Stderr, "CAdvisor Client Unmarshal err = %v\n", err)
 		err = fmt.Errorf("unable to unmarshal %q (Body: %q) from %q with error: %v", infoName, string(body), url, err)
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "CAdvisor Client data = %v\n", data)
 	return nil
 }
 
@@ -157,15 +128,15 @@ eg: flannel=350, calico=250, weave=150
 It returns {weave, calico, flannel}
 
 */
-func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
+func computeNetworkUsage(cinfo []ContainerStatsGenie) (string) {
 	//default ranks of usage
 	//TODO (Karun): This is just a simple way of ranking. Needs improvement.
 	//go with flannel as first preference, calico as second
 	// weave as third
 	m := make(map[string]int)
-	m["flan"] 	= 1
+	m["weav"] 	= 1
 	m["cali"] 	= 2
-	m["weav"] 	= 3
+	m["flan"] 	= 3
 
 
 	rx := make(map[string]uint64)
@@ -173,7 +144,7 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 
 	for i, c := range cinfo {
 		use := []InterfaceBandwidthUsage{}
-		glog.V(6).Info("==== i=", i)
+		fmt.Fprintf(os.Stderr, "CAdvisor Client computeNetworkUsage i = %v\n", i)
 		for _, intf := range c.Network.Interfaces {
 			var downlink uint64
 			//var uplink uint64
@@ -181,6 +152,7 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 				//fmt.Println("TxBytes=", intf.TxBytes)
 
 				if oldrx, ok := rx[intf.Name]; ok {
+					fmt.Fprintf(os.Stderr, "CAdvisor Client computeNetworkUsage intfname = %v\n", intf.Name[:4])
 					glog.V(6).Info("intfname=", intf.Name[:4])
 					glog.V(6).Info("RxBytes=", intf.RxBytes)
 					glog.V(6).Info("oldrx=", oldrx)
@@ -197,8 +169,10 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 				//use = append(use,InterfaceBandwidthUsage{IntName: intf.Name, DownLink: downlink, UpLink: uplink})
 			}
 		}
+		fmt.Fprintf(os.Stderr, "CAdvisor Client computeNetworkUsage use = %v\n", use)
 		glog.V(6).Info("use==>", use)
 	}
+	fmt.Fprintf(os.Stderr, "CAdvisor Client computeNetworkUsage m = %v\n", m)
 	glog.V(6).Info("m==>", m)
 	//sort by values of map
 	cns := SortedKeys(m)
@@ -214,8 +188,9 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) ([]string) {
 			cns[i] = "canal"
 		}
 	}
+	fmt.Fprintf(os.Stderr, "CAdvisor Client computeNetworkUsage cns = %v\n", cns[0])
 	fmt.Println("cns==>", cns)
-	return cns
+	return cns[0]
 }
 
 /**
@@ -224,34 +199,42 @@ input
 	- cAdvisorURL : http://127.0.0.1:4194 or http://<nodeip>:4194
 	- numStats : int (number of stats needed default 3)
  */
-func GetCNSOrderByNetworkBandwith(cAdvisorURL string, numStats int) ([]string,error) {
+func GetCNSOrderByNetworkBandwith(cAdvisorURL string, numStats int) (string,error) {
 	if cAdvisorURL == "" {
-		return nil, fmt.Errorf("cAdvisorURL is empty. Should be eg: http://127.0.0.1:4194")
+		return "", fmt.Errorf("cAdvisorURL is empty. Should be eg: http://127.0.0.1:4194")
 	}
 	if numStats <= 0 {
 		numStats = 3
 	}
 
-	staticClient, err := NewClient(cAdvisorURL)
+	/*staticClient, err := NewClient(cAdvisorURL)
 	glog.V(6).Info("staticClient=", staticClient)
 	if err != nil {
 		glog.Errorf("tried to make client and got error %v", err)
 		return nil, err
-	}
+	}*/
 
-	query := v1.ContainerInfoRequest{NumStats: numStats}
+	//query := v1.ContainerInfoRequest{NumStats: numStats}
+	/*	query := v1.DefaultContainerInfoRequest()
 
-	cinfo, err := staticClient.GetDockerContainers(&query)
-	if err != nil {
+		fmt.Println("query==>", query)
+*/
+	cinfo, _ := GetDockerContainers(fmt.Sprintf("%s/api/v1.3/", cAdvisorURL), nil)
+	/*if err != nil {
 		glog.Errorf("got error retrieving event info: %v", err)
+		fmt.Errorf("****got error retrieving event info: %v", err)
 		return nil, err
-	}
-	res := computeNetworkUsage(cinfo)
+	}*/
+	fmt.Fprintf(os.Stderr, "CAdvisor Client cinfo is = %v\n", cinfo)
+	//res := computeNetworkUsage(cinfo)
 
+	//res := []string{"canal", "weave", "test"}
+	res := "canal"
+	fmt.Fprintf(os.Stderr, "CAdvisor Client response = %v\n", res)
 	return res,nil
 
 }
-
+/*
 func staticContainersClientExample() {
 	cns,err := GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194/", 3)
 	if err != nil {
@@ -261,8 +244,10 @@ func staticContainersClientExample() {
 
 }
 
+
 // demonstrates how to use event clients
 func main() {
 	flag.Parse()
 	staticContainersClientExample()
 }
+*/

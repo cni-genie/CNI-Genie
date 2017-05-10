@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"os"
 	"github.com/projectcalico/cni-plugin/utils"
+	"net"
 )
 
 func init() {
@@ -15,9 +16,9 @@ var _ = Describe("CNIGenie", func() {
 	hostname, _ := os.Hostname()
 	utils.ConfigureLogging("info")
 	fmt.Println("Inside CNIGenie tests for k8s ***")
+	logger := utils.CreateContextLogger("genie_k8s_tests")
 
 	Describe("Run Genie for k8s", func() {
-		logger := utils.CreateContextLogger("genie_k8s_tests")
 		logger.Info("Inside Run Genie for k8s...")
 		logger.Info("Hostname:", hostname)
 		cniVersion := os.Getenv("CNI_SPEC_VERSION")
@@ -49,21 +50,26 @@ var _ = Describe("CNIGenie", func() {
 	})
 
 	Describe("Check for available CNSs", func() {
-		logger := utils.CreateContextLogger("avaialbe_CNS")
+		By("List all running CNSs on the node")
 		logger.Info("Inside Check for available CNSs")
+		l, err := net.Interfaces()
+		if err != nil {
+			panic(err)
+
+		}
+		for _, f := range l {
+			fmt.Println(f.Name)
+		}
 
 	})
 
 	Describe("Add canal networking for Pod", func() {
-		logger := utils.CreateContextLogger("genie_k8s_tests")
 		logger.Info("Inside Check for adding Canal networking")
 
 	})
 
 	Describe("Add weave networking for Pod", func() {
-		logger := utils.CreateContextLogger("genie_k8s_tests")
 		logger.Info("Inside Check for adding weave networking")
-
 	})
 
 	Describe("Add nocni networking for Pod", func() {

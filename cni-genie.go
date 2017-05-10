@@ -40,7 +40,7 @@ func init() {
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
-
+	fmt.Fprintf(os.Stderr, "CNI Genie cmdAdd = %v\n")
 	// Unmarshall the network config, and perform validation
 	conf := NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
@@ -94,6 +94,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
+			fmt.Fprintf(os.Stderr, "CNI Genie conf marshal = %v\n", string(args.StdinData))
 			result, err = ipam.ExecAdd("flannel", args.StdinData)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
@@ -103,11 +104,12 @@ func cmdAdd(args *skel.CmdArgs) error {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "CNI Genie result= %s\n", result)
+	fmt.Fprintf(os.Stderr, "CNI Genie End result= %s\n", result)
 	return types.PrintResult(result,conf.CNIVersion)
 }
 
 func cmdDel(args *skel.CmdArgs) error {
+	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n")
 	// Unmarshall the network config, and perform validation
 	conf := NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
@@ -166,7 +168,7 @@ func cmdDel(args *skel.CmdArgs) error {
 			}
 		}
 	}
-
+	fmt.Fprintf(os.Stderr, "CNI Genie END cmdDel = %v\n", ipamErr)
 	return ipamErr
 }
 
@@ -202,19 +204,21 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
 		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
 		if err != nil {
-			return nil, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
+			fmt.Fprintf(os.Stderr, "CNI Genie GetCNSOrderByNetworkBandwith err= %v\n", err)
+			//return nil, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
 		}
+		//cns := []string{"canal"}
 		fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
 		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n",pod.Annotations["cni"])
-		pod.Annotations["cni"] = cns[0]
+		pod.Annotations["cni"] = cns
 		pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
 		if err != nil {
 			fmt.Errorf("CNI Genie Error updating pod = %s", err)
 		}
 		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n",podTmp.Annotations["cni"])
-		finalAnnots = []string {cns[0]}
+		finalAnnots = []string {cns}
 	} else {
 		annots = strings.Split(annot["cni"], ",")
 		fmt.Fprintf(os.Stderr, "CNI Genie annots= %v\n", annots)

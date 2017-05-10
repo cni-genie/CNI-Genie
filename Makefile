@@ -17,7 +17,6 @@ plugin: dist/genie
 
 .PHONY: test
 test: dist/genie-test
-    sudo CGO_ENABLED=0 ETCD_IP=127.0.0.1 PLUGIN=genie CNI_SPEC_VERSION=1.0 GOPATH=$(GOPATH) $(shell which ginkgo)
 
 .PHONY: clean
 clean:
