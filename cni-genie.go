@@ -32,6 +32,10 @@ import (
 	"github.com/golang/glog"
 )
 
+const (
+	MultiIPPreferencesAnnotation = "multi-ip-preferences"
+)
+
 func init() {
 	// This ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we
@@ -55,6 +59,24 @@ func cmdAdd(args *skel.CmdArgs) error {
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var result types.Result
+
+	/////
+	workload, _, err := getIdentifiers(args)
+	if err != nil {
+		return err
+	}
+
+	logger := createContextLogger(workload)
+	client, err := newK8sClient(conf, logger)
+	if err != nil {
+		return err
+	}
+	k8sArgs := K8sArgs{}
+	err = types.LoadArgs(args.Args, &k8sArgs)
+	if err != nil {
+		return err
+	}
+	/////
 
 	for i,ele := range annots {
 		fmt.Fprintf(os.Stderr, "CNI Genie ele = %v\n", ele)
@@ -101,6 +123,25 @@ func cmdAdd(args *skel.CmdArgs) error {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "CNI Genie canal result = %v\n", result)
+		}
+		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+		MultiIPPreferencesString, found := pod.Annotations[MultiIPPreferencesAnnotation]
+		if !found {
+			fmt.Fprintf(os.Stderr, "CNI Genie MultiIPPreferencesAnnotation not found = %s\n", found)
+		} else {
+			var multiIPPreferences MultiIPPreferences
+			if err := json.Unmarshal([]byte(MultiIPPreferencesString), &multiIPPreferences); err != nil {
+				fmt.Errorf("CNI Genie Error parsing MultiIPPreferencesAnnotation = %s\n", err)
+			}
+			multiIPPreferences.MultiEntry = multiIPPreferences.MultiEntry + 1
+			multiIPPreferences.Ips["ip" + strconv.Itoa(i + 1)] = IPAddressPreferences{"eth" + strconv.Itoa(i), strings.Split((strings.Split(result.String(), "IP4:{IP:{IP:")[1]), " Mask")[0]}
+			tmpMultiIPPreferences,_ := json.Marshal(&multiIPPreferences)
+			pod.Annotations[MultiIPPreferencesAnnotation] = string(tmpMultiIPPreferences)
+			fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[MultiIPPreferencesAnnotation] after = %v\n", pod.Annotations[MultiIPPreferencesAnnotation])
+			pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+			if err != nil {
+				fmt.Errorf("CNI Genie Error updating pod = %s", err)
+			}
 		}
 	}
 

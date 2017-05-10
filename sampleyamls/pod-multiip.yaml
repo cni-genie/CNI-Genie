@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-multiip
+  labels:
+    app: web
+  annotations:
+    cni: "weave,canal"
+    multi-ip-preferences: |
+      {
+        "multi_entry": 0,
+        "ips": {
+          "": {
+            "ip": "",
+            "interface": ""
+          }
+        }
+      }
+spec:
+  containers:
+    - name: key-value-store
+      image: nginx:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 6379
+

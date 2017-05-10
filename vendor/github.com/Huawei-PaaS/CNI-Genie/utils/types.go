@@ -68,3 +68,17 @@ type K8sArgs struct {
 	K8S_POD_INFRA_CONTAINER_ID types.UnmarshallableString
 }
 
+// Temporary/alpha structures to support multiple ip addresses within Pod.
+
+// A set of preferences that can be added to Pod as a json-serialized annotation.
+// The preferences allow to express the number of ip addresses, ip addresses,
+// their corresponding interfaces within the Pod.
+type MultiIPPreferences struct {
+	MultiEntry int64 `json:"multi_entry,omitempty"`
+	Ips map[string]IPAddressPreferences `json:"ips,omitempty"`
+}
+
+type IPAddressPreferences struct {
+	Ip string `json:"ip,omitempty"`
+	Interface string `json:"interface,omitempty"`
+}
