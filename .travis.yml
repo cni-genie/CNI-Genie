@@ -6,3 +6,12 @@ go:
   - 1.6
   - 1.7.x
   - master
+
+# TODO (Karun): This works only if travis has k8s environment. Hence commenting it for now.
+#install:
+#    - go get -v github.com/onsi/ginkgo/ginkgo
+#    - go get -v github.com/onsi/gomega
+#    - export PATH=$PATH:$HOME/gopath/bin
+
+# TODO (Karun): This works only if travis has k8s environment. Hence commenting it for now.
+# script: ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --compilers=2

@@ -243,12 +243,11 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 	if annot["cni"] == "" {
 		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
 		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
-		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194", 3)
+		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie GetCNSOrderByNetworkBandwith err= %v\n", err)
-			//return nil, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
+			return nil, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
 		}
-		//cns := []string{"canal"}
 		fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
 		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n",pod.Annotations["cni"])
