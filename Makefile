@@ -11,7 +11,7 @@ TEST_SRCFILES=$(wildcard *_test.go)
 MAKE_SURE_DIST_EXIST := $(shell mkdir -p dist)
 
 .PHONY: all plugin
-default: clean all test
+default: clean all
 all: plugin
 plugin: dist/genie
 
