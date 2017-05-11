@@ -169,7 +169,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	var ipamErr error
 
 	for i,ele := range annots {
-		switch ele {
+		switch strings.TrimSpace(ele) {
 		case "weave":
 			conf.IPAM.Type = "weave-ipam"
 			conf.Type = "weave-net"
@@ -240,7 +240,7 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
 
-	if annot["cni"] == "" {
+	if strings.TrimSpace(annot["cni"]) == "" {
 		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
 		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
 		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194")

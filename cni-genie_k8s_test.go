@@ -28,7 +28,7 @@ var _ = Describe("CNIGenie", func() {
 	hostname, _ := os.Hostname()
 	utils.ConfigureLogging("info")
 	logger := utils.CreateContextLogger("genie_k8s_tests")
-	logger.Info("Inside CNIGenie tests for k8s")
+	logger.Info("Inside CNIGenie tests for k8s:", hostname)
 
 	Describe("Run Genie for k8s", func() {
 		logger.Info("Inside Run Genie for k8s...")
@@ -73,18 +73,22 @@ var _ = Describe("CNIGenie", func() {
 
 			}
 			It("successfully identify CNS", func() {
+				cnsAvailable := false
 				for _, f := range l {
 					if len(f.Name) > 4 {
 						if f.Name[:4] == "cali" {
+							cnsAvailable = true
 							Expect(f.Name).To(ContainSubstring("cali"), " of type Canal")
 						} else if f.Name[:4] == "flan" {
+							cnsAvailable = true
 							Expect(f.Name).To(ContainSubstring("flanne"), " of type Canal")
 						} else if f.Name[:4] == "weav" {
+							cnsAvailable = true
 							Expect(f.Name).To(ContainSubstring("weav"), " of type weave")
 						}
-
 					}
 				}
+				Expect(cnsAvailable).To(Equal(true))
 			})
 		})
 	})
@@ -102,7 +106,7 @@ var _ = Describe("CNIGenie", func() {
 			if err != nil {
 				panic(err)
 			}
-			name := fmt.Sprintf("nginx%d", rand.Uint32())
+			name := fmt.Sprintf("nginx-cnal-%d", rand.Uint32())
 			interfaceName := "eth0"
 			logger.Info(interfaceName)
 
@@ -141,23 +145,23 @@ var _ = Describe("CNIGenie", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Waiting for the pod to have running status")
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
+				By("Waiting for the canal pod to have running status")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
 				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				logger.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
-				By("Pod was in Running state... Time to delete the pod now...")
+				By("Pod was in Running state... Time to delete the canal pod now...")
 				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				By("Waiting 2 seconds")
-				time.Sleep(time.Duration(2 * time.Second))
-				By("Check for pod deletion")
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for canal pod deletion")
 				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
-					Expect(err).NotTo(HaveOccurred())
+					//do nothing pod has already been deleted
 				}
 				Expect("Success").To(Equal("Success"))
 			})
@@ -178,7 +182,7 @@ var _ = Describe("CNIGenie", func() {
 			if err != nil {
 				panic(err)
 			}
-			name := fmt.Sprintf("nginx%d", rand.Uint32())
+			name := fmt.Sprintf("nginx-weave-%d", rand.Uint32())
 			interfaceName := "eth0"
 			logger.Info(interfaceName)
 
@@ -217,23 +221,23 @@ var _ = Describe("CNIGenie", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Waiting for the pod to have running status")
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
+				By("Waiting for the weave pod to have running status")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
 				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				logger.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
-				By("Pod was in Running state... Time to delete the pod now...")
+				By("Pod was in Running state... Time to delete the weave pod now...")
 				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				By("Waiting 2 seconds")
-				time.Sleep(time.Duration(2 * time.Second))
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for pod deletion")
 				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
-					Expect(err).NotTo(HaveOccurred())
+					//do nothing pod has already been deleted
 				}
 				Expect("Success").To(Equal("Success"))
 			})
@@ -253,7 +257,7 @@ var _ = Describe("CNIGenie", func() {
 			if err != nil {
 				panic(err)
 			}
-			name := fmt.Sprintf("nginx%d", rand.Uint32())
+			name := fmt.Sprintf("nginx-multiip-%d", rand.Uint32())
 			interfaceName := "eth0"
 			logger.Info(interfaceName)
 
@@ -276,7 +280,7 @@ var _ = Describe("CNIGenie", func() {
 
 			It("should succeed multi-ip networking for pod", func() {
 				annots := make(map[string]string)
-				annots["cni"] = "weave,canal"
+				annots["cni"] = "canal,weave"
 				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
@@ -292,23 +296,23 @@ var _ = Describe("CNIGenie", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Waiting for the pod to have running status")
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
+				By("Waiting for the multi-ip pod to have running status")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
 				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				logger.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
-				By("Pod was in Running state... Time to delete the pod now...")
+				By("Pod was in Running state... Time to delete the multi-ip pod now...")
 				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				By("Waiting 2 seconds")
-				time.Sleep(time.Duration(2 * time.Second))
-				By("Check for pod deletion")
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for multi-ip pod deletion")
 				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
-					Expect(err).NotTo(HaveOccurred())
+					//do nothing pod has already been deleted
 				}
 				Expect("Success").To(Equal("Success"))
 			})
@@ -328,7 +332,7 @@ var _ = Describe("CNIGenie", func() {
 			if err != nil {
 				panic(err)
 			}
-			name := fmt.Sprintf("nginx%d", rand.Uint32())
+			name := fmt.Sprintf("nginx-nocni-%d", rand.Uint32())
 			interfaceName := "eth0"
 			logger.Info(interfaceName)
 
@@ -351,7 +355,7 @@ var _ = Describe("CNIGenie", func() {
 
 			It("should succeed nocni networking for pod", func() {
 				annots := make(map[string]string)
-				annots["cni"] = ""
+				annots["cni"] = " "
 				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
@@ -367,23 +371,23 @@ var _ = Describe("CNIGenie", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Waiting for the pod to have running status")
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
+				By("Waiting for the nocni pod to have running status")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
 				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				logger.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
-				By("Pod was in Running state... Time to delete the pod now...")
+				By("Pod was in Running state... Time to delete the nocni pod now...")
 				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				By("Waiting 2 seconds")
-				time.Sleep(time.Duration(2 * time.Second))
-				By("Check for pod deletion")
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for nocni pod deletion")
 				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
-					Expect(err).NotTo(HaveOccurred())
+					//do nothing pod has already been deleted
 				}
 				Expect("Success").To(Equal("Success"))
 			})
