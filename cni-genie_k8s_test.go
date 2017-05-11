@@ -319,7 +319,7 @@ var _ = Describe("CNIGenie", func() {
 		})
 	})
 
-	/*Describe("Add nocni networking for Pod", func() {
+	Describe("Add nocni networking for Pod", func() {
 		logger.Info("Inside Check for adding nocni networking")
 		cniVersion := os.Getenv("CNI_SPEC_VERSION")
 		logger.Info("cniVersion:", cniVersion)
@@ -393,7 +393,7 @@ var _ = Describe("CNIGenie", func() {
 			})
 		})
 
-	})*/
+	})
 
 	//No guarantee this test case executes in the end.
 	//Ginkgo doesn't execute in sequential order
