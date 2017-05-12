@@ -15,6 +15,10 @@ So, CNI-Genie "Multiple CNI Plugins" feature is designed to solve this problem w
 
 ![image](what-cni-genie.png)
 
+## Demo
+
+[![asciicast](https://asciinema.org/a/120279.png)](https://asciinema.org/a/120279)
+
 ## How CNI-Genie feature 1 works?
 
 * Step 1: 
