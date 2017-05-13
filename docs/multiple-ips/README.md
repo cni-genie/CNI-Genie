@@ -48,7 +48,7 @@ spec:
     ![image](multi-interface.png)
 
 # Feature 2 Extension: CNI-Genie "Multiple IP Addresses PER POD"
-   * This Work In-Progress (WIP) is an extension of Feature 2 to not only assign IP addresses to the container, but also inject them to the respective Pod object annotations. 
+   * This Work In-Progress (WIP) is an extension of Feature 2 where IP addresses are not only assigned to the container, but are also injected to the respective Pod object annotations. 
    * A [design document](https://docs.google.com/document/d/1zT2ofZzeowrJ-h4JWeKQyRGSDADJQssOoCFPpfwni7U/edit?usp=sharing) was prepared and shared with Kubernetes SIG Network community.
    * Watch the PoC demo to see how it works:
    
