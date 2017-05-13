@@ -48,6 +48,9 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
     - CNI Genie maintains a list of KPIs for every CNI plugin including occupancy rate, number of subnets, network latency, available network bandwidth    
     - CNI Genie maintains a list of KPIs for every container, e.g., network bandwidth utilization
 
+[Watch Smart CNI Plugin Selection demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/smart-cni-genie/README.md#demo)
+
+
 4. [CNI-Genie network policy engine](docs/network-policy/README.md) for network level ACLs
 
 Note: CNI Genie is NOT a routing solution! It gets IP addresses from various CNSs
