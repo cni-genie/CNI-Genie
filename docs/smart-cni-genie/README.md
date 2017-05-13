@@ -30,7 +30,7 @@ metadata:
   labels:
     app: web
   annotations:
-    cni: "genie"
+    cni: ""
 spec:
   containers:
     - name: key-value-store
