@@ -52,5 +52,5 @@ spec:
    * A [design document](https://docs.google.com/document/d/1zT2ofZzeowrJ-h4JWeKQyRGSDADJQssOoCFPpfwni7U/edit?usp=sharing) was prepared and shared with Kubernetes SIG Network community.
    * Watch the PoC demo to see how it works:
    
-[![asciicast](https://asciinema.org/a/826lpix75zbjtpepn6kbj4t9i.png)](https://asciinema.org/a/826lpix75zbjtpepn6kbj4t9i)
+[![asciicast](https://asciinema.org/a/120338.png)](https://asciinema.org/a/120338)
    
