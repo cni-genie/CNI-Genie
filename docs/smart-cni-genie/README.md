@@ -14,6 +14,10 @@
     - Occupancy rate
     - A questionnaire filled out by the user to find use-case-optimized CNI plugin
     
+# Demo
+
+[![asciicast](https://asciinema.org/a/120340.png)](https://asciinema.org/a/120340)
+
 # How it works now
 
 In this case user leaves it to CNI-Genie to decide ideal logical network to be selected for a pod. The pod yaml looks like this:
