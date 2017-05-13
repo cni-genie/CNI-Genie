@@ -49,5 +49,6 @@ spec:
 
 # Feature 2 Extension: CNI-Genie "Multiple IP Addresses PER POD"
    * This extension is a Work In-Progress (WIP). A [design document](https://docs.google.com/document/d/1zT2ofZzeowrJ-h4JWeKQyRGSDADJQssOoCFPpfwni7U/edit?usp=sharing) was prepared and shared with Kubernetes SIG Network community.
-   * You can watch the demo of this WIP here
+   
+[![asciicast](https://asciinema.org/a/826lpix75zbjtpepn6kbj4t9i.png)](https://asciinema.org/a/826lpix75zbjtpepn6kbj4t9i)
    
