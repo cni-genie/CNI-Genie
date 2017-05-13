@@ -42,7 +42,7 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
     
 [Watch multiple IP addresses demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-ips/README.md#demo)
 
-[Watch multiple IP addresses PER POD demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-ips/README.md#feature-2-extension-cni-genie-multiple-ip-addresses-per-pod):  not only assign IP addresses to the container, but also to the Pod annotations
+[Watch multiple IP addresses PER POD demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-ips/README.md#feature-2-extension-cni-genie-multiple-ip-addresses-per-pod):  not only assign IP addresses to the container, but also to the Pod
 
 3. The user can leave the CNI plugin selection to CNI-Genie. CNI-Genie maintains a list of Key Performance Indicators (KPIs) to [smartly select one (or more) CNI plugin](docs/smart-cni-genie/README.md)
     - CNI Genie maintains a list of KPIs for every CNI plugin including occupancy rate, number of subnets, network latency, available network bandwidth    
