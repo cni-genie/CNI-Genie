@@ -28,6 +28,13 @@ $ systemctl restart kubelet
 $ systemctl status kubelet
 ```
 
+## Test process
+
+To run ginkgo tests for CNI-Genie run the following command:
+```
+$ make test
+```
+
 ## Configuring CNI-Genie plugin
 
 As this experiment expects your cluster to have multi-network plugins running on the slave nodes, you need to follow the below steps:
