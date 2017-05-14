@@ -83,7 +83,7 @@ To see the logs:
 ```
 $ cat /dev/null > /var/log/syslog
 
-$ tail -f /var/log/syslog | grep 'Calico CNI'
+$ tail -f /var/log/syslog | grep 'CNI'
 ```
 
 That's all for now!
