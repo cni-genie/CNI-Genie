@@ -20,9 +20,12 @@ services:
   - docker
 
 after_success:
-  - if [ "$TRAVIS_BRANCH" == "master"]; then
-    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io/cnigenie/v1.5;
-    docker tag v1.5 quay.io/cnigenie
-    docker build -f conf/1.5/Dockerfile .
-    docker push quay.io/cnigenie/v1.5;
-    fi
+  - docker --version
+  - export COMMIT=${TRAVIS_COMMIT::8}
+  - export REPO=quay.io/cnigenie/v1.5
+  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io/cnigenie/v1.5
+  - docker build -t cnigenie -t $REPO:$TAG -f conf/1.5/Dockerfile .
+  - docker tag $REPO:$COMMIT $REPO:$TAG
+  - docker tag $REPO:$COMMIT $REPO:$TRAVIS_BUILD_NUMBER
+  - docker push $REPO
