@@ -15,3 +15,14 @@ go:
 
 # TODO (Karun): This works only if travis has k8s environment. Hence commenting it for now.
 # script: ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --compilers=2
+
+services:
+  - docker
+
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master"]; then
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io/cnigenie/v1.5;
+    docker tag v1.5 quay.io/cnigenie
+    docker build -f conf/1.5/Dockerfile .
+    docker push quay.io/cnigenie/v1.5;
+    fi
