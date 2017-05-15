@@ -19,12 +19,19 @@ go:
 services:
   - docker
 
+env:
+  global:
+    - REPO=quay.io/cnigenie/v1.5
+
 after_success:
   - docker --version
-  - export REPO=quay.io/cnigenie/v1.5
+  - echo 'Travis commit is:\n'
+  - echo $TRAVIS_COMMIT
+  - echo 'Travis Build Number is:\n'
+  - echo $TRAVIS_BUILD_NUMBER
   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
   - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io/cnigenie/v1.5
   - docker build -t cnigenie -t $REPO:$TAG -f conf/1.5/Dockerfile .
-  - docker tag $REPO:$TAG
-  - docker tag $REPO:$TRAVIS_BUILD_NUMBER
+  - docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG
+  - docker tag $REPO:$TRAVIS_COMMIT $REPO:$TRAVIS_BUILD_NUMBER
   - docker push $REPO

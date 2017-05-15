@@ -81,12 +81,12 @@ spec:
               name: cni-net-dir
       volumes:
         # Used by genie/node.
-        - name: lib-modules
-          hostPath:
-            path: /lib/modules
-        - name: var-run-genie
-          hostPath:
-            path: /var/run/genie
+        #- name: lib-modules
+        #  hostPath:
+        #    path: /lib/modules
+        #- name: var-run-genie
+        #  hostPath:
+        #    path: /var/run/genie
         # Used to install CNI.
         - name: cni-bin-dir
           hostPath:
