@@ -240,7 +240,10 @@ func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
 	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
 
-	if strings.TrimSpace(annot["cni"]) == "" {
+	if len(annot) == 0 {
+		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Default plugin is canal! annot is %V\n", annot)
+		finalAnnots = []string {"canal"}
+	} else if strings.TrimSpace(annot["cni"]) == "" {
 		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
 		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
 		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194")
