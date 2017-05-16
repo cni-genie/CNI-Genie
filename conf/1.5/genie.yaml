@@ -62,7 +62,7 @@ spec:
         # Installs required 00-genie.conf and genie binary
         # on slave node.
         - name: install-cni
-          image: quay.io/cnigenie/v1.5
+          image: quay.io/cnigenie/v1.5:latest
           command: ["/launch.sh"]
           env:
             - name: CNI_NETWORK_CONFIG

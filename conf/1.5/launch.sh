@@ -92,7 +92,7 @@ sed -i s/__KUBERNETES_SERVICE_HOST__/${KUBERNETES_SERVICE_HOST:-}/g $TMP_CONF
 sed -i s/__KUBERNETES_SERVICE_PORT__/${KUBERNETES_SERVICE_PORT:-}/g $TMP_CONF
 sed -i s/__KUBERNETES_NODE_NAME__/${KUBERNETES_NODE_NAME:-$(hostname)}/g $TMP_CONF
 sed -i s/__SERVICEACCOUNT_TOKEN__/${SERVICEACCOUNT_TOKEN:-}/g $TMP_CONF
-sed -i s/__KUBECONFIG_FILEPATH__/genie-kubeconfig/g $TMP_CONF
+sed -i s~__KUBECONFIG_FILEPATH__~${HOST_CNI_NET_DIR}/genie-kubeconfig/g $TMP_CONF
 
 # Move the temporary CNI config into place.
 FILENAME=${CNI_CONF_NAME:-00-genie.conf}
