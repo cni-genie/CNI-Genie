@@ -84,6 +84,10 @@ sed -i s/__KUBERNETES_SERVICE_PORT__/${KUBERNETES_SERVICE_PORT:-}/g $TMP_CONF
 sed -i s/__KUBERNETES_NODE_NAME__/${KUBERNETES_NODE_NAME:-$(hostname)}/g $TMP_CONF
 sed -i s/__SERVICEACCOUNT_TOKEN__/${SERVICEACCOUNT_TOKEN:-}/g $TMP_CONF
 
+#For supporting Romana
+sed -i s/__ROMANA_SERVICE_HOST__/${ROMANA_ROOT_SERVICE_HOST:-}/g $TMP_CONF
+sed -i s/__ROMANA_SERVICE_PORT__/${ROMANA_ROOT_SERVICE_PORT:-}/g $TMP_CONF
+
 #contains path hence using * instead of /
 # NOTWORKING!
 #sed -i s*__KUBECONFIG_FILEPATH__*/etc/cni/net.d/genie-kubeconfig*g $TMP_CONF

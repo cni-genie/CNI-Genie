@@ -106,7 +106,7 @@ var _ = Describe("CNIGenie", func() {
 			if err != nil {
 				panic(err)
 			}
-			name := fmt.Sprintf("nginx-cnal-%d", rand.Uint32())
+			name := fmt.Sprintf("nginx-canal-%d", rand.Uint32())
 			interfaceName := "eth0"
 			logger.Info(interfaceName)
 
@@ -159,6 +159,82 @@ var _ = Describe("CNIGenie", func() {
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for canal pod deletion")
+				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
+	})
+
+	Describe("Add romana networking for Pod", func() {
+		logger.Info("Inside Check for adding romana networking")
+
+		cniVersion := os.Getenv("CNI_SPEC_VERSION")
+		logger.Info("cniVersion:", cniVersion)
+		Context("using cni-genie for configuring romana CNI", func() {
+			config, err := clientcmd.DefaultClientConfig.ClientConfig()
+			if err != nil {
+				panic(err)
+			}
+			clientset, err := kubernetes.NewForConfig(config)
+			if err != nil {
+				panic(err)
+			}
+			name := fmt.Sprintf("nginx-romana-%d", rand.Uint32())
+			interfaceName := "eth0"
+			logger.Info(interfaceName)
+
+			It("should create test namespace", func() {
+				ns, err := clientset.Namespaces().Create(&v1.Namespace{
+					ObjectMeta: v1.ObjectMeta{Name: TEST_NS},
+				})
+				if err != nil && errors.IsAlreadyExists(err) {
+					//do nothing ignore
+				} else if err != nil {
+					//if some other error other than Already Exists
+					Expect(err).ShouldNot(HaveOccurred())
+				}
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				ns, err = clientset.Namespaces().Get(TEST_NS, meta_v1.GetOptions{})
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(ns.Name).To(Equal(TEST_NS))
+			})
+
+			It("should succeed romana networking for pod", func() {
+				annots := make(map[string]string)
+				annots["cni"] = "romana"
+				//Create a K8s Pod with canal cni
+				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
+					ObjectMeta: v1.ObjectMeta{
+						Name: name,
+						Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name: fmt.Sprintf("container-%s", name),
+						Image: "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the romana pod to have running status")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
+				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				logger.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the romana pod now...")
+				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for pod deletion")
 				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
