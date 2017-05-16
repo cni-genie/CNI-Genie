@@ -22,7 +22,7 @@ data:
             "kubeconfig": "/etc/cni/net.d/genie-kubeconfig"
         }
         #For supporting romana plugin
-	"romana_root": "http://__ROMANA_SERVICE_HOST__:__ROMANA_SERVICE_PORT__",
+        "romana_root": "http://__ROMANA_SERVICE_HOST__:__ROMANA_SERVICE_PORT__",
         "segment_label_name": "romanaSegment"
     }
 
