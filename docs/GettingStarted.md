@@ -18,7 +18,7 @@ This is easier way to setup CNI-Genie on your cluster. If you want to build from
 
 * Kubernetes versions up to 1.5:
 ```
-$ kubectl apply -f https://github.com/Huawei-PaaS/CNI-Genie/blob/master/conf/1.5/genie.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.5/genie.yaml
 ```
 
 * Kubernetes versions up to 1.6:
