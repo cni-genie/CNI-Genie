@@ -31,7 +31,7 @@ after_success:
   - echo $TRAVIS_BUILD_NUMBER
   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
   - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io/cnigenie/v1.5
-  - docker build -t cnigenie -t $REPO:$TAG -f conf/1.5/Dockerfile .
-  - docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG
-  - docker tag $REPO:$TRAVIS_COMMIT $REPO:$TRAVIS_BUILD_NUMBER
+  - docker build -t cnigenie -f conf/1.5/Dockerfile .
+  - docker tag cnigenie:latest $REPO:$TAG
+  - docker tag cnigenie:latest $REPO:$TRAVIS_BUILD_NUMBER
   - docker push $REPO
