@@ -81,6 +81,22 @@ func cmdAdd(args *skel.CmdArgs) error {
 	for i,ele := range annots {
 		fmt.Fprintf(os.Stderr, "CNI Genie ele = %v\n", ele)
 		switch ele {
+		case "romana":
+			conf.Name = "romana-k8s-network" //romana expects this name!
+			conf.IPAM.Type = "romana-ipam"
+			conf.Type = "romana"
+			//conf.RomanaRoot = "http://10.98.18.248:9600"
+			//conf.SegmentLabelName = "romanaSegment"
+			args.StdinData,_ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			result, err = ipam.ExecAdd("romana", args.StdinData)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "CNI Genie romana result = %v\n", result)
 		case "weave":
 			conf.IPAM.Type = "weave-ipam"
 			conf.Type = "weave-net"
@@ -170,6 +186,17 @@ func cmdDel(args *skel.CmdArgs) error {
 
 	for i,ele := range annots {
 		switch strings.TrimSpace(ele) {
+		case "romana":
+			conf.IPAM.Type = "romana-ipam"
+			conf.Type = "romana"
+			args.StdinData, _ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			ipamErr := ipam.ExecDel("romana", args.StdinData)
+			if ipamErr != nil {
+				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
+			}
 		case "weave":
 			conf.IPAM.Type = "weave-ipam"
 			conf.Type = "weave-net"
