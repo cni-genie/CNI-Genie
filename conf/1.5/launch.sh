@@ -50,14 +50,6 @@ if [ -w "/host/opt/cni/bin/" ]; then
         echo "CNI plugin version: $(/host/opt/cni/bin/genie -v)"
 fi
 
-# Place them in the secondary location if it exists and
-# is writeable.
-if [ -w "/host/secondary-bin-dir/" ]; then
-        cp /opt/cni/bin/genie /host/secondary-bin-dir/
-        echo "Wrote CNIGenie CNI binaries to /host/secondary-bin-dir/"
-        echo "CNI plugin version: $(/host/secondary-bin-dir/genie -v)"
-fi
-
 TMP_CONF='/genie.conf.tmp'
 # If specified, overwrite the network configuration file.
 if [ "${CNI_NETWORK_CONFIG:-}" != "" ]; then
@@ -86,13 +78,15 @@ contexts:
 current-context: genie-context
 EOF
 
-# Insert any of the supported "auto" parameters.
 SERVICEACCOUNT_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 sed -i s/__KUBERNETES_SERVICE_HOST__/${KUBERNETES_SERVICE_HOST:-}/g $TMP_CONF
 sed -i s/__KUBERNETES_SERVICE_PORT__/${KUBERNETES_SERVICE_PORT:-}/g $TMP_CONF
 sed -i s/__KUBERNETES_NODE_NAME__/${KUBERNETES_NODE_NAME:-$(hostname)}/g $TMP_CONF
 sed -i s/__SERVICEACCOUNT_TOKEN__/${SERVICEACCOUNT_TOKEN:-}/g $TMP_CONF
-sed -i s~__KUBECONFIG_FILEPATH__~${HOST_CNI_NET_DIR}/genie-kubeconfig/g $TMP_CONF
+
+#contains path hence using * instead of /
+# NOTWORKING!
+#sed -i s*__KUBECONFIG_FILEPATH__*/etc/cni/net.d/genie-kubeconfig*g $TMP_CONF
 
 # Move the temporary CNI config into place.
 FILENAME=${CNI_CONF_NAME:-00-genie.conf}
