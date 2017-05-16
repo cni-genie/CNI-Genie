@@ -57,6 +57,10 @@ type NetConf struct {
 	EtcdCertFile   string     `json:"etcd_cert_file"`
 	EtcdCaCertFile string     `json:"etcd_ca_cert_file"`
 	Delegate       v1.Delegate   `json:"delegate"`
+
+	//added for romana
+	RomanaRoot        string  `json:"romana_root"`
+	SegmentLabelName  string  `json:"segment_label_name"`
 }
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes
