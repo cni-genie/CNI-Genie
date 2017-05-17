@@ -98,7 +98,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 			}
 			fmt.Fprintf(os.Stderr, "CNI Genie romana result = %v\n", result)
 		case "weave":
-			conf.IPAM.Type = "weave-ipam"
 			conf.Type = "weave-net"
 			args.StdinData,_ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
@@ -111,8 +110,9 @@ func cmdAdd(args *skel.CmdArgs) error {
 			}
 			fmt.Fprintf(os.Stderr, "CNI Genie weave result = %v\n", result)
 		case "calico":
-			conf.IPAM.Type = "calico-ipam"
 			conf.Type = "calico"
+			conf.IPAM.Type = "host-local"
+			conf.IPAM.Subnet = "usePodCidr"
 			args.StdinData,_ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
@@ -122,8 +122,23 @@ func cmdAdd(args *skel.CmdArgs) error {
 				return err
 			}
 		case "canal":
+			conf.Type = "calico"
+			conf.IPAM.Type = "host-local"
+			conf.IPAM.Subnet = "usePodCidr"
+			args.StdinData, _ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			fmt.Fprintf(os.Stderr, "CNI Genie conf marshal = %v\n", string(args.StdinData))
+			result, err = ipam.ExecAdd("calico", args.StdinData)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "CNI Genie canal result = %v\n", result)
+		case "flannel":
 			conf.Type = "flannel"
-			conf.Delegate.DelegateType = "calico"
+			conf.Delegate.DelegateType = "flannel"
 			conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
 			conf.Delegate.LogLevel = conf.LogLevel
 			conf.Delegate.Policy = conf.Policy
@@ -138,7 +153,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
 				return err
 			}
-			fmt.Fprintf(os.Stderr, "CNI Genie canal result = %v\n", result)
+			fmt.Fprintf(os.Stderr, "CNI Genie flannel result = %v\n", result)
 		}
 		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		MultiIPPreferencesString, found := pod.Annotations[MultiIPPreferencesAnnotation]
@@ -198,7 +213,6 @@ func cmdDel(args *skel.CmdArgs) error {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
 		case "weave":
-			conf.IPAM.Type = "weave-ipam"
 			conf.Type = "weave-net"
 			args.StdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
@@ -209,8 +223,9 @@ func cmdDel(args *skel.CmdArgs) error {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
 		case "calico":
-			conf.IPAM.Type = "calico-ipam"
 			conf.Type = "calico"
+			conf.IPAM.Type = "host-local"
+			conf.IPAM.Subnet = "usePodCidr"
 			args.StdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
@@ -220,8 +235,20 @@ func cmdDel(args *skel.CmdArgs) error {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
 		case "canal":
+			conf.Type = "calico"
+			conf.IPAM.Type = "host-local"
+			conf.IPAM.Subnet = "usePodCidr"
+			args.StdinData, _ = json.Marshal(&conf)
+			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
+				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
+			}
+			ipamErr := ipam.ExecDel("calico", args.StdinData)
+			if ipamErr != nil {
+				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
+			}
+		case "flannel":
 			conf.Type = "flannel"
-			conf.Delegate.DelegateType = "calico"
+			conf.Delegate.DelegateType = "flannel"
 			conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
 			conf.Delegate.LogLevel = conf.LogLevel
 			conf.Delegate.Policy = conf.Policy
