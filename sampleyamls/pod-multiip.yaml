@@ -5,7 +5,7 @@ metadata:
   labels:
     app: web
   annotations:
-    cni: "weave,canal"
+    cni: "canal,flannel,weave"
     multi-ip-preferences: |
       {
         "multi_entry": 0,

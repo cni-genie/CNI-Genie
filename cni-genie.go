@@ -80,18 +80,22 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	for i,ele := range annots {
 		fmt.Fprintf(os.Stderr, "CNI Genie ele = %v\n", ele)
+		conf := NetConf{}
+		if err := json.Unmarshal(args.StdinData, &conf); err != nil {
+			return fmt.Errorf("failed to load netconf: %v", err)
+		}
+		var stdinData []byte
 		switch ele {
 		case "romana":
+
 			conf.Name = "romana-k8s-network" //romana expects this name!
 			conf.IPAM.Type = "romana-ipam"
 			conf.Type = "romana"
-			//conf.RomanaRoot = "http://10.98.18.248:9600"
-			//conf.SegmentLabelName = "romanaSegment"
-			args.StdinData,_ = json.Marshal(&conf)
+			stdinData,_ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			result, err = ipam.ExecAdd("romana", args.StdinData)
+			result, err = ipam.ExecAdd("romana", stdinData)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
 				return err
@@ -99,11 +103,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 			fmt.Fprintf(os.Stderr, "CNI Genie romana result = %v\n", result)
 		case "weave":
 			conf.Type = "weave-net"
-			args.StdinData,_ = json.Marshal(&conf)
+			stdinData,_ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			result, err = ipam.ExecAdd("weave-net", args.StdinData)
+			result, err = ipam.ExecAdd("weave-net", stdinData)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
 				return err
@@ -113,11 +117,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 			conf.Type = "calico"
 			conf.IPAM.Type = "host-local"
 			conf.IPAM.Subnet = "usePodCidr"
-			args.StdinData,_ = json.Marshal(&conf)
+			stdinData,_ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			result, err = ipam.ExecAdd("calico", args.StdinData)
+			result, err = ipam.ExecAdd("calico", stdinData)
 			if err != nil {
 				return err
 			}
@@ -125,12 +129,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 			conf.Type = "calico"
 			conf.IPAM.Type = "host-local"
 			conf.IPAM.Subnet = "usePodCidr"
-			args.StdinData, _ = json.Marshal(&conf)
+			stdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			fmt.Fprintf(os.Stderr, "CNI Genie conf marshal = %v\n", string(args.StdinData))
-			result, err = ipam.ExecAdd("calico", args.StdinData)
+			result, err = ipam.ExecAdd("calico", stdinData)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
 				return err
@@ -143,12 +146,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 			conf.Delegate.LogLevel = conf.LogLevel
 			conf.Delegate.Policy = conf.Policy
 			conf.Delegate.Kubernetes = conf.Kubernetes
-			args.StdinData, _ = json.Marshal(&conf)
+			stdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			fmt.Fprintf(os.Stderr, "CNI Genie conf marshal = %v\n", string(args.StdinData))
-			result, err = ipam.ExecAdd("flannel", args.StdinData)
+			result, err = ipam.ExecAdd("flannel", stdinData)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
 				return err
@@ -200,25 +202,29 @@ func cmdDel(args *skel.CmdArgs) error {
 	var ipamErr error
 
 	for i,ele := range annots {
+		if err := json.Unmarshal(args.StdinData, &conf); err != nil {
+			return fmt.Errorf("failed to load netconf: %v", err)
+		}
+		var stdinData []byte
 		switch strings.TrimSpace(ele) {
 		case "romana":
 			conf.IPAM.Type = "romana-ipam"
 			conf.Type = "romana"
-			args.StdinData, _ = json.Marshal(&conf)
+			stdinData,_ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			ipamErr := ipam.ExecDel("romana", args.StdinData)
+			ipamErr := ipam.ExecDel("romana", stdinData)
 			if ipamErr != nil {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
 		case "weave":
 			conf.Type = "weave-net"
-			args.StdinData, _ = json.Marshal(&conf)
+			stdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			ipamErr := ipam.ExecDel("weave-net", args.StdinData)
+			ipamErr := ipam.ExecDel("weave-net", stdinData)
 			if ipamErr != nil {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
@@ -226,11 +232,11 @@ func cmdDel(args *skel.CmdArgs) error {
 			conf.Type = "calico"
 			conf.IPAM.Type = "host-local"
 			conf.IPAM.Subnet = "usePodCidr"
-			args.StdinData, _ = json.Marshal(&conf)
+			stdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			ipamErr := ipam.ExecDel("calico", args.StdinData)
+			ipamErr := ipam.ExecDel("calico", stdinData)
 			if ipamErr != nil {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
@@ -238,11 +244,11 @@ func cmdDel(args *skel.CmdArgs) error {
 			conf.Type = "calico"
 			conf.IPAM.Type = "host-local"
 			conf.IPAM.Subnet = "usePodCidr"
-			args.StdinData, _ = json.Marshal(&conf)
+			stdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			ipamErr := ipam.ExecDel("calico", args.StdinData)
+			ipamErr := ipam.ExecDel("calico", stdinData)
 			if ipamErr != nil {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
@@ -253,11 +259,11 @@ func cmdDel(args *skel.CmdArgs) error {
 			conf.Delegate.LogLevel = conf.LogLevel
 			conf.Delegate.Policy = conf.Policy
 			conf.Delegate.Kubernetes = conf.Kubernetes
-			args.StdinData, _ = json.Marshal(&conf)
+			stdinData, _ = json.Marshal(&conf)
 			if os.Setenv("CNI_IFNAME", "eth" + strconv.Itoa(i)) != nil {
 				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 			}
-			ipamErr := ipam.ExecDel("flannel", args.StdinData)
+			ipamErr := ipam.ExecDel("flannel", stdinData)
 			if ipamErr != nil {
 				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
 			}
