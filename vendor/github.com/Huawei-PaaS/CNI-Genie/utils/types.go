@@ -57,6 +57,9 @@ type NetConf struct {
 	EtcdCertFile   string     `json:"etcd_cert_file"`
 	EtcdCaCertFile string     `json:"etcd_ca_cert_file"`
 	Delegate       v1.Delegate   `json:"delegate"`
+	CalicoSubnet   string   `json:"calico_subnet"`
+	CanalSubnet    string   `json:"canal_subnet"`
+	WeaveSubnet    string   `json:"weave_subnet"`
 
 	//added for romana
 	RomanaRoot        string  `json:"romana_root"`
