@@ -3,6 +3,7 @@
 CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kubernetes/kubernetes), [Mesos](https://mesosphere.com/)) to seamlessly connect to choice of CNI plugins ([Calico](https://github.com/projectcalico/calico), [Canal](https://github.com/projectcalico/canal), [Romana](https://github.com/romana/romana), [Weave](https://github.com/weaveworks/weave)) configured on a Node. Without CNI-Genie, kubelet is bound to a signle CNI plugin passed to kubelet on start. CNI-Genie allows for multiple CNI plugins being available to kubelet simultaneously. 
 
 [![Build Status](https://travis-ci.org/Huawei-PaaS/CNI-Genie.svg)](https://travis-ci.org/Huawei-PaaS/CNI-Genie)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Huawei-PaaS/CNI-Genie)](https://goreportcard.com/report/github.com/Huawei-PaaS/CNI-Genie)
 
 ***Note: this repo is still in inital development phase, so expect cracking sounds at times! :)***
 
