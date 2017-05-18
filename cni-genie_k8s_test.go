@@ -4,14 +4,14 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"os"
 	"github.com/projectcalico/cni-plugin/utils"
-	meta_v1 "k8s.io/client-go/pkg/apis/meta/v1"
-	"net"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
+	meta_v1 "k8s.io/client-go/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	"math/rand"
+	"net"
+	"os"
 	"time"
 
 	"k8s.io/client-go/pkg/api/errors"
@@ -133,12 +133,12 @@ var _ = Describe("CNIGenie", func() {
 				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
-						Name: name,
+						Name:        name,
 						Annotations: annots,
 					},
 					Spec: v1.PodSpec{Containers: []v1.Container{{
-						Name: fmt.Sprintf("container-%s", name),
-						Image: "nginx:latest",
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
 						ImagePullPolicy: "IfNotPresent",
 					}}},
 				})
@@ -209,12 +209,12 @@ var _ = Describe("CNIGenie", func() {
 				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
-						Name: name,
+						Name:        name,
 						Annotations: annots,
 					},
 					Spec: v1.PodSpec{Containers: []v1.Container{{
-						Name: fmt.Sprintf("container-%s", name),
-						Image: "nginx:latest",
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
 						ImagePullPolicy: "IfNotPresent",
 					}}},
 				})
@@ -285,12 +285,12 @@ var _ = Describe("CNIGenie", func() {
 				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
-						Name: name,
+						Name:        name,
 						Annotations: annots,
 					},
 					Spec: v1.PodSpec{Containers: []v1.Container{{
-						Name: fmt.Sprintf("container-%s", name),
-						Image: "nginx:latest",
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
 						ImagePullPolicy: "IfNotPresent",
 					}}},
 				})
@@ -360,12 +360,12 @@ var _ = Describe("CNIGenie", func() {
 				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
-						Name: name,
+						Name:        name,
 						Annotations: annots,
 					},
 					Spec: v1.PodSpec{Containers: []v1.Container{{
-						Name: fmt.Sprintf("container-%s", name),
-						Image: "nginx:latest",
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
 						ImagePullPolicy: "IfNotPresent",
 					}}},
 				})
@@ -435,12 +435,12 @@ var _ = Describe("CNIGenie", func() {
 				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
-						Name: name,
+						Name:        name,
 						Annotations: annots,
 					},
 					Spec: v1.PodSpec{Containers: []v1.Container{{
-						Name: fmt.Sprintf("container-%s", name),
-						Image: "nginx:latest",
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
 						ImagePullPolicy: "IfNotPresent",
 					}}},
 				})
