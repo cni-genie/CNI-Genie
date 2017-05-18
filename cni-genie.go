@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	// This is a key used for parsing pod definitions
-	// with annotations cni followed by "multi-ip-preferences"
+	// MultiIPPreferencesAnnotation is a key used for parsing pod
+	// definitions containing "multi-ip-preferences" annotation
 	MultiIPPreferencesAnnotation = "multi-ip-preferences"
 )
 
