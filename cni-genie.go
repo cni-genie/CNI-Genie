@@ -30,7 +30,7 @@ func init() {
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
-	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n", args.StdinData)
+	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n", string(args.StdinData))
 
 	conf, err := genie.ParseCNIConf(args.StdinData)
 
@@ -49,7 +49,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
-	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n", args.StdinData)
+	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n", string(args.StdinData))
 
 	conf, err := genie.ParseCNIConf(args.StdinData)
 
