@@ -13,29 +13,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/Huawei-PaaS/CNI-Genie/genie"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
-	log "github.com/Sirupsen/logrus"
-	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"
-	"github.com/golang/glog"
-	"k8s.io/client-go/kubernetes"
-	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"runtime"
-	"strconv"
-	"strings"
-)
-
-const (
-	// MultiIPPreferencesAnnotation is a key used for parsing pod
-	// definitions containing "multi-ip-preferences" annotation
-	MultiIPPreferencesAnnotation = "multi-ip-preferences"
 )
 
 func init() {
@@ -46,138 +30,18 @@ func init() {
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
-	fmt.Fprintf(os.Stderr, "CNI Genie cmdAdd = %v\n")
-	// Unmarshall the network config, and perform validation
-	conf := utils.NetConf{}
-	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
+	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n", args.StdinData)
+
+	conf, err := genie.ParseCNIConf(args.StdinData)
+
+	if err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
 	}
-
-	annots, err := getAnnotStringArray(args)
-
-	if err != nil {
-		return fmt.Errorf("cni genie internal error: %v", err)
-	}
-	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
-	// it to stdout.
-	var result types.Result
-
-	/////
-	workload, _, err := getIdentifiers(args)
-	if err != nil {
-		return err
-	}
-
-	logger := createContextLogger(workload)
-	client, err := newK8sClient(conf, logger)
-	if err != nil {
-		return err
-	}
-	k8sArgs := utils.K8sArgs{}
-	err = types.LoadArgs(args.Args, &k8sArgs)
-	if err != nil {
-		return err
-	}
-	/////
-
-	for i, ele := range annots {
-		fmt.Fprintf(os.Stderr, "CNI Genie ele = %v\n", ele)
-		conf := utils.NetConf{}
-		if err := json.Unmarshal(args.StdinData, &conf); err != nil {
-			return fmt.Errorf("failed to load netconf: %v", err)
-		}
-		var stdinData []byte
-		switch ele {
-		case "romana":
-
-			conf.Name = "romana-k8s-network" //romana expects this name!
-			conf.IPAM.Type = "romana-ipam"
-			conf.Type = "romana"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			result, err = ipam.ExecAdd("romana", stdinData)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "CNI Genie romana result = %v\n", result)
-		case "weave":
-			conf.Type = "weave-net"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			result, err = ipam.ExecAdd("weave-net", stdinData)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "CNI Genie weave result = %v\n", result)
-		case "calico":
-			conf.Type = "calico"
-			conf.IPAM.Type = "host-local"
-			conf.IPAM.Subnet = "usePodCidr"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			result, err = ipam.ExecAdd("calico", stdinData)
-			if err != nil {
-				return err
-			}
-		case "canal":
-			conf.Type = "calico"
-			conf.IPAM.Type = "host-local"
-			conf.IPAM.Subnet = "usePodCidr"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			result, err = ipam.ExecAdd("calico", stdinData)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "CNI Genie canal result = %v\n", result)
-		case "flannel":
-			conf.Type = "flannel"
-			conf.Delegate.DelegateType = "flannel"
-			conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
-			conf.Delegate.LogLevel = conf.LogLevel
-			conf.Delegate.Policy = conf.Policy
-			conf.Delegate.Kubernetes = conf.Kubernetes
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			result, err = ipam.ExecAdd("flannel", stdinData)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "CNI Genie flannel result = %v\n", result)
-		}
-		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
-		MultiIPPreferencesString, found := pod.Annotations[MultiIPPreferencesAnnotation]
-		if !found {
-			fmt.Fprintf(os.Stderr, "CNI Genie MultiIPPreferencesAnnotation not found = %s\n", found)
-		} else {
-			var multiIPPreferences utils.MultiIPPreferences
-			if err := json.Unmarshal([]byte(MultiIPPreferencesString), &multiIPPreferences); err != nil {
-				fmt.Errorf("CNI Genie Error parsing MultiIPPreferencesAnnotation = %s\n", err)
-			}
-			multiIPPreferences.MultiEntry = multiIPPreferences.MultiEntry + 1
-			multiIPPreferences.Ips["ip"+strconv.Itoa(i+1)] = utils.IPAddressPreferences{strings.Split((strings.Split(result.String(), "IP4:{IP:{IP:")[1]), " Mask")[0], "eth" + strconv.Itoa(i)}
-			tmpMultiIPPreferences, _ := json.Marshal(&multiIPPreferences)
-			pod.Annotations[MultiIPPreferencesAnnotation] = string(tmpMultiIPPreferences)
-			fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[MultiIPPreferencesAnnotation] after = %v\n", pod.Annotations[MultiIPPreferencesAnnotation])
-			pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
-			if err != nil {
-				fmt.Errorf("CNI Genie Error updating pod = %s", err)
-			}
-		}
+	cniArgs := genie.PopulateCNIArgs(args)
+	fmt.Fprintf(os.Stderr, "CNI Genie Add IP address\n")
+	result,ipamErr := genie.AddPodNetwork(cniArgs, conf)
+	if ipamErr != nil {
+		return fmt.Errorf("CNI Genie Add IP internal error: %v", ipamErr)
 	}
 
 	fmt.Fprintf(os.Stderr, "CNI Genie End result= %s\n", result)
@@ -185,246 +49,21 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
-	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n")
-	// Unmarshall the network config, and perform validation
-	conf := utils.NetConf{}
-	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
+	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n", args.StdinData)
+
+	conf, err := genie.ParseCNIConf(args.StdinData)
+
+	if err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
 	}
-
+	cniArgs := genie.PopulateCNIArgs(args)
 	fmt.Fprintf(os.Stderr, "CNI Genie releasing IP address\n")
-
-	annots, err := getAnnotStringArray(args)
-
-	if err != nil {
-		return fmt.Errorf("cni genie internal error: %v", err)
-	}
-	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
-	// it to stdout.
-	var ipamErr error
-
-	for i, ele := range annots {
-		conf := utils.NetConf{}
-		if err := json.Unmarshal(args.StdinData, &conf); err != nil {
-			return fmt.Errorf("failed to load netconf: %v", err)
-		}
-		var stdinData []byte
-		switch strings.TrimSpace(ele) {
-		case "romana":
-			conf.IPAM.Type = "romana-ipam"
-			conf.Type = "romana"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			ipamErr := ipam.ExecDel("romana", stdinData)
-			if ipamErr != nil {
-				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
-			}
-		case "weave":
-			conf.Type = "weave-net"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			ipamErr := ipam.ExecDel("weave-net", stdinData)
-			if ipamErr != nil {
-				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
-			}
-		case "calico":
-			conf.Type = "calico"
-			conf.IPAM.Type = "host-local"
-			conf.IPAM.Subnet = "usePodCidr"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			ipamErr := ipam.ExecDel("calico", stdinData)
-			if ipamErr != nil {
-				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
-			}
-		case "canal":
-			conf.Type = "calico"
-			conf.IPAM.Type = "host-local"
-			conf.IPAM.Subnet = "usePodCidr"
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			ipamErr := ipam.ExecDel("calico", stdinData)
-			if ipamErr != nil {
-				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
-			}
-		case "flannel":
-			conf.Type = "flannel"
-			conf.Delegate.DelegateType = "flannel"
-			conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
-			conf.Delegate.LogLevel = conf.LogLevel
-			conf.Delegate.Policy = conf.Policy
-			conf.Delegate.Kubernetes = conf.Kubernetes
-			stdinData, _ = json.Marshal(&conf)
-			if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(i)) != nil {
-				fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-			}
-			ipamErr := ipam.ExecDel("flannel", stdinData)
-			if ipamErr != nil {
-				fmt.Fprintf(os.Stderr, "ipamErr= %s\n", ipamErr)
-			}
-		}
-	}
-	fmt.Fprintf(os.Stderr, "CNI Genie END cmdDel = %v\n", ipamErr)
-	return ipamErr
-}
-
-func getAnnotStringArray(args *skel.CmdArgs) ([]string, error) {
-	// Unmarshall the network config, and perform validation
-	var annots []string
-	var finalAnnots []string
-	conf := utils.NetConf{}
-	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
-		return annots, fmt.Errorf("CNI Genie failed to load netconf: %v", err)
-	}
-	workload, _, err := getIdentifiers(args)
-	if err != nil {
-		return annots, err
+	ipamErr := genie.DeletePodNetwork(cniArgs, conf)
+	if ipamErr != nil {
+		return fmt.Errorf("CNI Genie release IP internal error: %v", ipamErr)
 	}
 
-	logger := createContextLogger(workload)
-	client, err := newK8sClient(conf, logger)
-	if err != nil {
-		return annots, err
-	}
-	k8sArgs := utils.K8sArgs{}
-	err = types.LoadArgs(args.Args, &k8sArgs)
-	if err != nil {
-		return annots, err
-	}
-	annot := make(map[string]string)
-	_, annot, err = getK8sLabelsAnnotations(client, k8sArgs)
-	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
-
-	if len(annot) == 0 {
-		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Default plugin is canal! annot is %V\n", annot)
-		finalAnnots = []string{"canal"}
-	} else if strings.TrimSpace(annot["cni"]) == "" {
-		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
-		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
-		cns, err := genie.GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie GetCNSOrderByNetworkBandwith err= %v\n", err)
-			return nil, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
-		}
-		fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
-		pod, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
-		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n", pod.Annotations["cni"])
-		pod.Annotations["cni"] = cns
-		pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
-		if err != nil {
-			fmt.Errorf("CNI Genie Error updating pod = %s", err)
-		}
-		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
-		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n", podTmp.Annotations["cni"])
-		finalAnnots = []string{cns}
-	} else {
-		annots = strings.Split(annot["cni"], ",")
-		fmt.Fprintf(os.Stderr, "CNI Genie annots= %v\n", annots)
-		finalAnnots = annots
-	}
-	fmt.Fprintf(os.Stderr, "CNI Genie return finalAnnots = %v\n", finalAnnots)
-	return finalAnnots, err
-}
-
-func getK8sLabelsAnnotations(client *kubernetes.Clientset, k8sargs utils.K8sArgs) (map[string]string, map[string]string, error) {
-	pod, err := client.Pods(string(k8sargs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sargs.K8S_POD_NAME), metav1.GetOptions{})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	labels := pod.Labels
-	if labels == nil {
-		labels = make(map[string]string)
-	}
-
-	labels["calico/k8s_ns"] = fmt.Sprintf("%s", k8sargs.K8S_POD_NAMESPACE)
-
-	return labels, pod.Annotations, nil
-}
-
-// Create a logger which always includes common fields
-func createContextLogger(workload string) *log.Entry {
-	// A common pattern is to re-use fields between logging statements by re-using
-	// the logrus.Entry returned from WithFields()
-	contextLogger := log.WithFields(log.Fields{
-		"Workload": workload,
-	})
-
-	return contextLogger
-}
-
-func getIdentifiers(args *skel.CmdArgs) (workloadID string, orchestratorID string, err error) {
-	// Determine if running under k8s by checking the CNI args
-	k8sArgs := utils.K8sArgs{}
-	if err = types.LoadArgs(args.Args, &k8sArgs); err != nil {
-		return workloadID, orchestratorID, err
-	}
-
-	if string(k8sArgs.K8S_POD_NAMESPACE) != "" && string(k8sArgs.K8S_POD_NAME) != "" {
-		workloadID = fmt.Sprintf("%s.%s", k8sArgs.K8S_POD_NAMESPACE, k8sArgs.K8S_POD_NAME)
-		orchestratorID = "k8s"
-	} else {
-		workloadID = args.ContainerID
-		orchestratorID = "cni"
-	}
-	return workloadID, orchestratorID, nil
-}
-
-func newK8sClient(conf utils.NetConf, logger *log.Entry) (*kubernetes.Clientset, error) {
-	// Some config can be passed in a kubeconfig file
-	kubeconfig := conf.Kubernetes.Kubeconfig
-
-	// Config can be overridden by config passed in explicitly in the network config.
-	configOverrides := &clientcmd.ConfigOverrides{}
-
-	// If an API root is given, make sure we're using using the name / port rather than
-	// the full URL. Earlier versions of the config required the full `/api/v1/` extension,
-	// so split that off to ensure compatibility.
-	conf.Policy.K8sAPIRoot = strings.Split(conf.Policy.K8sAPIRoot, "/api/")[0]
-
-	var overridesMap = []struct {
-		variable *string
-		value    string
-	}{
-		{&configOverrides.ClusterInfo.Server, conf.Policy.K8sAPIRoot},
-		{&configOverrides.AuthInfo.ClientCertificate, conf.Policy.K8sClientCertificate},
-		{&configOverrides.AuthInfo.ClientKey, conf.Policy.K8sClientKey},
-		{&configOverrides.ClusterInfo.CertificateAuthority, conf.Policy.K8sCertificateAuthority},
-		{&configOverrides.AuthInfo.Token, conf.Policy.K8sAuthToken},
-	}
-
-	// Using the override map above, populate any non-empty values.
-	for _, override := range overridesMap {
-		if override.value != "" {
-			*override.variable = override.value
-		}
-	}
-
-	// Also allow the K8sAPIRoot to appear under the "kubernetes" block in the network config.
-	if conf.Kubernetes.K8sAPIRoot != "" {
-		configOverrides.ClusterInfo.Server = conf.Kubernetes.K8sAPIRoot
-	}
-
-	// Use the kubernetes client code to load the kubeconfig file and combine it with the overrides.
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig},
-		configOverrides).ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Debugf("Kubernetes config %v", config)
-
-	// Create the clientset
-	return kubernetes.NewForConfig(config)
+	return nil
 }
 
 func main() {
