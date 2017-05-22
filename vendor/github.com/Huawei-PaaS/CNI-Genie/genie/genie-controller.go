@@ -10,6 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
+Package genie provides API for single-networking or multi-networking.
+It has genie-cadvisor-client that exposes an API to talk to cAdvisor.
+It has genie-controller that exposes an API for pod single IP based
+networking or pod multi-IP based networking.
+*/
 package genie
 
 import (
@@ -35,6 +41,7 @@ const (
 	MultiIPPreferencesAnnotation = "multi-ip-preferences"
 )
 
+// PopulateCNIArgs wraps skel.CmdArgs into Genie's native CNIArgs format.
 func PopulateCNIArgs(args *skel.CmdArgs) utils.CNIArgs {
 	cniArgs := utils.CNIArgs{}
 	cniArgs.Args = args.Args
@@ -47,6 +54,8 @@ func PopulateCNIArgs(args *skel.CmdArgs) utils.CNIArgs {
 	return cniArgs
 }
 
+// ParseCNIConf parses input configuration file and returns
+// Genie's native NetConf object.
 func ParseCNIConf(confData []byte) (utils.NetConf, error) {
 	// Unmarshall the network config, and perform validation
 	conf := utils.NetConf{}
@@ -56,10 +65,11 @@ func ParseCNIConf(confData []byte) (utils.NetConf, error) {
 	return conf, nil
 }
 
-/**
-AddPodNetwork add pod networking by parsing container
-networking solutions passed as pod's annotation
-*/
+// AddPodNetwork adds pod networking. It has logic to parse each pod
+// definition's annotations. It looks for container networking solutions (CNS)
+// types passed as annotation in pod defintion. For every CNS types, it talks
+// to corresponding CNS object and fetches an IP from it's IPAM.
+// It also applies the IP as ethX inside the pod.
 func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, error) {
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
@@ -74,16 +84,24 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 		return nil, fmt.Errorf("CNI Genie internal error at getIdentifiers: %v", err)
 	}
 
-	//Get KubeClient
+	// create kubeclient to talk to k8s api-server
 	kubeClient, err := GetKubeClient(conf)
 	if err != nil {
 		return nil, fmt.Errorf("CNI Genie error at GetKubeClient: %v", err)
 	}
+
+	// parse pod annotations for cns types
+	// eg:
+	//    cni: "canal,weave"
 	annots, err := ParsePodAnnotationsForCNI(kubeClient, k8sArgs)
 	if err != nil {
 		return nil, fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
 	}
 
+	// parse pod annotations for "multi-ip-preferences"
+	// eg:
+	//   multi-ip-preferences : |
+	//       { "multi-entry": 0, "ips": {"":{"ip":"", "interfaces":""}}}
 	multiIPPrefAnnot := ParsePodAnnotationsForMultiIPPrefs(kubeClient, k8sArgs)
 
 	var newErr error
@@ -96,12 +114,14 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 			newErr = err
 		}
 
+		// fetches an IP from corresponding CNS IPAM and returns result object
 		result, err = addNetwork(conf, i, ele, cniArgs)
 		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork err *** %v\n", err)
 		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork result***  %v\n", result)
 		if err != nil {
 			newErr = err
 		}
+		// Update pod definition with IPs "multi-ip-preferences"
 		err = UpdatePodDefinition(i, result, multiIPPrefAnnot, kubeClient, k8sArgs)
 		if err != nil {
 			newErr = err
@@ -113,10 +133,10 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 	return result, nil
 }
 
-/**
-DeletePodNetwork deletes pod networking by parsing container
-networking solutions passed as pod's annotation
-*/
+// DeletePodNetwork deletes pod networking. It has logic to parse each pod
+// definition's annotations. It looks for container networking solutions (CNS)
+// types passed as annotation in pod defintion. For every CNS types, it talks
+// to corresponding CNS object and releases an IP from it's IPAM.
 func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 	k8sArgs, err := loadArgs(cniArgs)
 	if err != nil {
@@ -127,10 +147,15 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 		return fmt.Errorf("CNI Genie internal error at getIdentifiers: %v", err)
 	}
 
+	// create kubeclient to talk to k8s api-server
 	kubeClient, err := GetKubeClient(conf)
 	if err != nil {
 		return fmt.Errorf("CNI Genie error at GetKubeClient: %v", err)
 	}
+
+	// parse pod annotations for cns types
+	// eg:
+	//    cni: "canal,weave"
 	annots, err := ParsePodAnnotationsForCNI(kubeClient, k8sArgs)
 	if err != nil {
 		return fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
@@ -145,6 +170,8 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 		if err != nil {
 			newErr = err
 		}
+
+		// releases an IP from corresponding CNS IPAM and returns error if any exception
 		err = deleteNetwork(conf, i, ele, cniArgs)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie Error deleteNetwork %v", err)
@@ -157,11 +184,11 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 	return nil
 }
 
-/**
-UpdatePodDefinition updates the pod definition with multi ip addresses
-It updates pod definition with annotation containing multi ips from
-different configured networking solutions.
-*/
+// UpdatePodDefinition updates the pod definition with multi ip addresses.
+// It updates pod definition with annotation containing multi ips from
+// different configured networking solutions. It is also used in "nocni"
+// case where ideal network has been chosen for the pod. Pod annotation
+// in this case will update with CNS that's chosen at run time.
 func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) error {
 	var multiIPPreferences utils.MultiIPPreferences
 
@@ -173,6 +200,7 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 	if err := json.Unmarshal([]byte(multiIPPrefAnnot), &multiIPPreferences); err != nil {
 		fmt.Errorf("CNI Genie Error parsing MultiIPPreferencesAnnotation = %s\n", err)
 	}
+
 	multiIPPreferences.MultiEntry = multiIPPreferences.MultiEntry + 1
 	//TODO (Kaveh/Karun): Need some clean up here
 	multiIPPreferences.Ips["ip"+strconv.Itoa(intfId+1)] =
@@ -186,6 +214,7 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 		return err
 	}
 
+	// Get pod defition to update it in next steps
 	pod, err := GetPodDefinition(client, string(k8sArgs.K8S_POD_NAMESPACE), string(k8sArgs.K8S_POD_NAME))
 	if err != nil {
 		return err
@@ -200,9 +229,7 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 	return nil
 }
 
-/**
-GetPodDefinition returns a pod definition
-*/
+// GetPodDefinition gets pod definition through k8s api server
 func GetPodDefinition(client *kubernetes.Clientset, podNamespace string, podName string) (*v1.Pod, error) {
 	pod, err := client.Pods(podNamespace).Get(fmt.Sprintf("%s", podName), metav1.GetOptions{})
 	if err != nil {
@@ -211,9 +238,8 @@ func GetPodDefinition(client *kubernetes.Clientset, podNamespace string, podName
 	return pod, nil
 }
 
-/**
-GetKubeClient creates a kubeclient
-*/
+// GetKubeClient creates a kubeclient from genie-kubeconfig file,
+// default location is /etc/cni/net.d.
 func GetKubeClient(conf utils.NetConf) (*kubernetes.Clientset, error) {
 	// Some config can be passed in a kubeconfig file
 	kubeconfig := conf.Kubernetes.Kubeconfig
@@ -263,12 +289,10 @@ func GetKubeClient(conf utils.NetConf) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(config)
 }
 
-/**
-ParsePodAnnotationsForCNI does following tasks
- - get pod definition
- - parses annotation section for "cni"
- - Returns string array of networking solutions
-*/
+//ParsePodAnnotationsForCNI does following tasks
+//  - get pod definition
+//  - parses annotation section for "cni"
+//  - Returns string array of networking solutions
 func ParsePodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) ([]string, error) {
 	var annots []string
 
@@ -284,12 +308,10 @@ func ParsePodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sAr
 
 }
 
-/**
-ParsePodAnnotationsForMultiIPPrefs does following tasks
- - get pod definition
- - parses annotation section for "multi-ip-preferences"
- - Returns string
-*/
+// ParsePodAnnotationsForMultiIPPrefs does following tasks
+// - get pod definition
+// - parses annotation section for "multi-ip-preferences"
+// - Returns string
 func ParsePodAnnotationsForMultiIPPrefs(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) string {
 	annot, _ := getK8sPodAnnotations(client, k8sArgs)
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
@@ -297,6 +319,7 @@ func ParsePodAnnotationsForMultiIPPrefs(client *kubernetes.Clientset, k8sArgs ut
 	return multiIpAnno
 }
 
+//  parseCNIAnnotations parses pod yaml defintion for "cni" annotations.
 func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) ([]string, error) {
 	var finalAnnots []string
 
@@ -333,6 +356,7 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	return finalAnnots, nil
 }
 
+// addNetwork is a core function that delegates call to pull IP from a Container Networking Solution (CNI Plugin)
 func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
 	var result types.Result
 	var stdinData []byte
@@ -407,6 +431,7 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 	return nil, fmt.Errorf("CNI Genie doesn't support passed cniName [%v]. Only supported are (Romana, weave, canal, calico, flannel) \n", cniName)
 }
 
+// deleteNetwork is a core function that delegates call to release IP from a Container Networking Solution (CNI Plugin)
 func deleteNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) error {
 	var stdinData []byte
 

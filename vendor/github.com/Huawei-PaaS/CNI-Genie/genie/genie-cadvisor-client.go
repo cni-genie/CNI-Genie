@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+package genie
+
 /**
 This class enables cni-genie to check network usage interface wise on a node.
 In other words, it primarily computes network usage for each of the CNS on a
@@ -20,7 +22,6 @@ given node i.e. what is the network usage of weave, flannel etc.
 It returns CNS that has least load on it. So that, cni-genie can configure
 networking on the CNS with least load.
 */
-package genie
 
 import (
 	"bytes"

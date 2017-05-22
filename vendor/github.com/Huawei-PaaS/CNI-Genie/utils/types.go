@@ -10,6 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+// Package utils maintains various type definitions used by CNI-Genie.
+// It has for now a multi-purpose function to sort a map based on values.
 package utils
 
 import (
@@ -41,6 +44,7 @@ type AllInterfaces struct {
 	Interfaces []c.InterfaceStats
 }
 
+// CNIArgs is a replica of skel.CmdArgs.
 type CNIArgs struct {
 	ContainerID string
 	Netns       string
