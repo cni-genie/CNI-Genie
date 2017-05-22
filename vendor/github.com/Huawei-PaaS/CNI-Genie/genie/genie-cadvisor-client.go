@@ -19,21 +19,20 @@ given node i.e. what is the network usage of weave, flannel etc.
 
 It returns CNS that has least load on it. So that, cni-genie can configure
 networking on the CNS with least load.
- */
+*/
 package genie
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	. "github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/google/cadvisor/info/v1"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"strings"
-	"github.com/google/cadvisor/info/v1"
-	. "github.com/Huawei-PaaS/CNI-Genie/utils"
-	"os"
-	"bytes"
-
 )
 
 // Client represents the base URL for a cAdvisor client.
@@ -111,15 +110,15 @@ eg: flannel=350, calico=250, weave=150
 It returns {weave, calico, flannel}
 
 */
-func computeNetworkUsage(cinfo []ContainerStatsGenie) (string) {
+func computeNetworkUsage(cinfo []ContainerStatsGenie) string {
 	//default ranks of usage
 	//TODO (Karun): This is just a simple way of ranking. Needs improvement.
 	//go with flannel as first preference, calico as second
 	// weave as third
 	m := make(map[string]int)
-	m["flan"] 	= 0
-	m["cali"] 	= 0
-	m["weav"] 	= 0
+	m["flan"] = 0
+	m["cali"] = 0
+	m["weav"] = 0
 	var downlink int
 
 	rx := make(map[string]uint64)
@@ -163,8 +162,8 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) (string) {
 Returns network solution that has least load
 	- cAdvisorURL : http://127.0.0.1:4194 or http://<nodeip>:4194/api/v1.3
 	- numStats : int (number of stats needed default 3)
- */
-func GetCNSOrderByNetworkBandwith(cAdvisorURL string) (string,error) {
+*/
+func GetCNSOrderByNetworkBandwith(cAdvisorURL string) (string, error) {
 	if cAdvisorURL == "" {
 		return "", fmt.Errorf("cAdvisorURL is empty. Should be eg: http://127.0.0.1:4194")
 	}

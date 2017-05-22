@@ -14,28 +14,26 @@ package genie
 
 import (
 	"encoding/json"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"fmt"
+	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
-	"strings"
-	"os"
 	"github.com/golang/glog"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/v1"
+	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	"os"
 	"strconv"
+	"strings"
 )
-
 
 const (
 	// MultiIPPreferencesAnnotation is a key used for parsing pod
 	// definitions containing "multi-ip-preferences" annotation
 	MultiIPPreferencesAnnotation = "multi-ip-preferences"
 )
-
 
 func PopulateCNIArgs(args *skel.CmdArgs) utils.CNIArgs {
 	cniArgs := utils.CNIArgs{}
@@ -61,32 +59,32 @@ func ParseCNIConf(confData []byte) (utils.NetConf, error) {
 /**
 AddPodNetwork add pod networking by parsing container
 networking solutions passed as pod's annotation
- */
-func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf)  (types.Result, error) {
+*/
+func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, error) {
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
 	var result types.Result
 
-	k8sArgs,err := loadArgs(cniArgs)
+	k8sArgs, err := loadArgs(cniArgs)
 	if err != nil {
-		return nil,fmt.Errorf("CNI Genie internal error at loadArgs: %v", err)
+		return nil, fmt.Errorf("CNI Genie internal error at loadArgs: %v", err)
 	}
-	_, _,err = getIdentifiers(cniArgs, k8sArgs)
+	_, _, err = getIdentifiers(cniArgs, k8sArgs)
 	if err != nil {
-		return nil,fmt.Errorf("CNI Genie internal error at getIdentifiers: %v", err)
+		return nil, fmt.Errorf("CNI Genie internal error at getIdentifiers: %v", err)
 	}
 
 	//Get KubeClient
-	kubeClient,err := GetKubeClient(conf)
+	kubeClient, err := GetKubeClient(conf)
 	if err != nil {
-		return nil,fmt.Errorf("CNI Genie error at GetKubeClient: %v", err)
+		return nil, fmt.Errorf("CNI Genie error at GetKubeClient: %v", err)
 	}
 	annots, err := ParsePodAnnotationsForCNI(kubeClient, k8sArgs)
 	if err != nil {
-		return nil,fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
+		return nil, fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
 	}
 
-	multiIPPrefAnnot := ParsePodAnnotationsForMultiIPPrefs(kubeClient,k8sArgs)
+	multiIPPrefAnnot := ParsePodAnnotationsForMultiIPPrefs(kubeClient, k8sArgs)
 
 	var newErr error
 	for i, ele := range annots {
@@ -94,18 +92,18 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf)  (types.Result, er
 		// we should always reinitalize the conf to
 		// original value that came from StdinData
 		conf, err = ParseCNIConf(cniArgs.StdinData)
-		if err!=nil {
+		if err != nil {
 			newErr = err
 		}
 
 		result, err = addNetwork(conf, i, ele, cniArgs)
 		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork err *** %v\n", err)
 		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork result***  %v\n", result)
-		if err!=nil {
+		if err != nil {
 			newErr = err
 		}
-		err = UpdatePodDefinition(i, result, multiIPPrefAnnot, kubeClient,k8sArgs)
-		if err!=nil {
+		err = UpdatePodDefinition(i, result, multiIPPrefAnnot, kubeClient, k8sArgs)
+		if err != nil {
 			newErr = err
 		}
 	}
@@ -118,18 +116,18 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf)  (types.Result, er
 /**
 DeletePodNetwork deletes pod networking by parsing container
 networking solutions passed as pod's annotation
- */
-func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf)  error {
-	k8sArgs,err := loadArgs(cniArgs)
+*/
+func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
+	k8sArgs, err := loadArgs(cniArgs)
 	if err != nil {
 		return fmt.Errorf("CNI Genie internal error at loadArgs: %v", err)
 	}
-	_, _,err = getIdentifiers(cniArgs, k8sArgs)
+	_, _, err = getIdentifiers(cniArgs, k8sArgs)
 	if err != nil {
 		return fmt.Errorf("CNI Genie internal error at getIdentifiers: %v", err)
 	}
 
-	kubeClient,err := GetKubeClient(conf)
+	kubeClient, err := GetKubeClient(conf)
 	if err != nil {
 		return fmt.Errorf("CNI Genie error at GetKubeClient: %v", err)
 	}
@@ -144,11 +142,11 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf)  error {
 		// we should always reinitalize the conf to
 		// original value that came from StdinData
 		conf, err = ParseCNIConf(cniArgs.StdinData)
-		if err!=nil {
+		if err != nil {
 			newErr = err
 		}
 		err = deleteNetwork(conf, i, ele, cniArgs)
-		if err!=nil {
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie Error deleteNetwork %v", err)
 			newErr = err
 		}
@@ -163,11 +161,11 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf)  error {
 UpdatePodDefinition updates the pod definition with multi ip addresses
 It updates pod definition with annotation containing multi ips from
 different configured networking solutions.
- */
+*/
 func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) error {
 	var multiIPPreferences utils.MultiIPPreferences
 
-	if multiIPPrefAnnot ==  "" {
+	if multiIPPrefAnnot == "" {
 		fmt.Fprintf(os.Stderr, "CNI Genie No multi-ip-preferences annotation\n")
 		return nil
 	}
@@ -184,12 +182,12 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 
 	tmpMultiIPPreferences, err := json.Marshal(&multiIPPreferences)
 
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 
-	pod,err := GetPodDefinition(client, string(k8sArgs.K8S_POD_NAMESPACE), string(k8sArgs.K8S_POD_NAME))
-	if err!=nil {
+	pod, err := GetPodDefinition(client, string(k8sArgs.K8S_POD_NAMESPACE), string(k8sArgs.K8S_POD_NAME))
+	if err != nil {
 		return err
 	}
 
@@ -205,7 +203,7 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 /**
 GetPodDefinition returns a pod definition
 */
-func GetPodDefinition(client *kubernetes.Clientset, podNamespace string, podName string) (*v1.Pod, error){
+func GetPodDefinition(client *kubernetes.Clientset, podNamespace string, podName string) (*v1.Pod, error) {
 	pod, err := client.Pods(podNamespace).Get(fmt.Sprintf("%s", podName), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -215,7 +213,7 @@ func GetPodDefinition(client *kubernetes.Clientset, podNamespace string, podName
 
 /**
 GetKubeClient creates a kubeclient
- */
+*/
 func GetKubeClient(conf utils.NetConf) (*kubernetes.Clientset, error) {
 	// Some config can be passed in a kubeconfig file
 	kubeconfig := conf.Kubernetes.Kubeconfig
@@ -270,7 +268,7 @@ ParsePodAnnotationsForCNI does following tasks
  - get pod definition
  - parses annotation section for "cni"
  - Returns string array of networking solutions
- */
+*/
 func ParsePodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) ([]string, error) {
 	var annots []string
 
@@ -291,7 +289,7 @@ ParsePodAnnotationsForMultiIPPrefs does following tasks
  - get pod definition
  - parses annotation section for "multi-ip-preferences"
  - Returns string
- */
+*/
 func ParsePodAnnotationsForMultiIPPrefs(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) string {
 	annot, _ := getK8sPodAnnotations(client, k8sArgs)
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
@@ -335,7 +333,7 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	return finalAnnots, nil
 }
 
-func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result,error) {
+func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
 	var result types.Result
 	var stdinData []byte
 	var err error
@@ -352,7 +350,7 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 		result, err = ipam.ExecAdd("romana", stdinData)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil,err
+			return nil, err
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie romana result = %v\n", result)
 	case "weave":
@@ -361,7 +359,7 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 		result, err = ipam.ExecAdd("weave-net", stdinData)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil,err
+			return nil, err
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie weave result = %v\n", result)
 	case "calico":
@@ -371,7 +369,7 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 		stdinData, _ = json.Marshal(&conf)
 		result, err = ipam.ExecAdd("calico", stdinData)
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie weave result = %v\n", result)
 	case "canal":
@@ -382,7 +380,7 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 		result, err = ipam.ExecAdd("calico", stdinData)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil,err
+			return nil, err
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie canal result = %v\n", result)
 	case "flannel":
@@ -396,7 +394,7 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 		result, err = ipam.ExecAdd("flannel", stdinData)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil,err
+			return nil, err
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie flannel result = %v\n", result)
 	}
@@ -465,7 +463,7 @@ func deleteNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils
 	return nil
 }
 
-func loadArgs(cniArgs utils.CNIArgs) (utils.K8sArgs,error) {
+func loadArgs(cniArgs utils.CNIArgs) (utils.K8sArgs, error) {
 	k8sArgs := utils.K8sArgs{}
 	err := types.LoadArgs(cniArgs.Args, &k8sArgs)
 	if err != nil {
