@@ -2,12 +2,18 @@
 
 ### Prerequisite
 
-We assume you've the following environment ready:
-
-* Linux box [We tested this on Ubuntu 14.04]
+* Linux box with
+  * We tested on Ubuntu 14.04 & 16.04
 * Docker installed
-* Kubernetes cluster with one (or more) CNI plugin(s), e.g., Canal, Weave, Calico
-[Easiest way is to use kubeadm for bringing up a cluster - https://kubernetes.io/docs/getting-started-guides/kubeadm/]
+* Kubernetes cluster running with CNI enabled
+  * One easy way to bring up a cluster is to use [kubeadm](https://kubernetes.io/docs/getting-started-guides/kubeadm/). We used
+  ```
+  $ kubeadm init --use-kubernetes-version=v1.5.8-beta.0 --pod-network-cidr=10.244.0.0/16
+  ```
+* One(or more) CNI plugin(s) installed, e.g., Canal, Weave, Calico
+  * Use this [link](https://github.com/projectcalico/canal/tree/master/k8s-install) to install Canal
+  * Use this [link](https://www.weave.works/docs/net/latest/kube-addon/) to install Weave
+  * Use this [link](http://docs.projectcalico.org/v2.2/getting-started/kubernetes/installation/hosted/) to install Calico
 
 ### Installing genie
 
