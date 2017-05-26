@@ -5,10 +5,6 @@ CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kuber
 [![Build Status](https://travis-ci.org/Huawei-PaaS/CNI-Genie.svg)](https://travis-ci.org/Huawei-PaaS/CNI-Genie)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Huawei-PaaS/CNI-Genie)](https://goreportcard.com/report/github.com/Huawei-PaaS/CNI-Genie)
 
-***Note: this repo is still in inital development phase, so expect cracking sounds at times! :)***
-
-***Also please note that this initial proto-type is tested only with Kubernetes build. Mesos will be coming soon...***
-
 ## Demo
 Here is a 6 minute demo video that demonstrates 3 scenarios
 1. Assign IP to pod from a particular network solution eg; Get IP from "Weave"
