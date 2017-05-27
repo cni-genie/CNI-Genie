@@ -78,10 +78,10 @@ var _ = Describe("CNIGenie", func() {
 					if len(f.Name) > 4 {
 						if f.Name[:4] == "cali" {
 							cnsAvailable = true
-							Expect(f.Name).To(ContainSubstring("cali"), " of type Canal")
+							Expect(f.Name).To(ContainSubstring("cali"), " of type Calico")
 						} else if f.Name[:4] == "flan" {
 							cnsAvailable = true
-							Expect(f.Name).To(ContainSubstring("flanne"), " of type Canal")
+							Expect(f.Name).To(ContainSubstring("flanne"), " of type Flannel")
 						} else if f.Name[:4] == "weav" {
 							cnsAvailable = true
 							Expect(f.Name).To(ContainSubstring("weav"), " of type weave")
@@ -93,11 +93,11 @@ var _ = Describe("CNIGenie", func() {
 		})
 	})
 
-	Describe("Add canal networking for Pod", func() {
-		logger.Info("Inside Check for adding Canal networking")
+	Describe("Add calico networking for Pod", func() {
+		logger.Info("Inside Check for adding Calico networking")
 		cniVersion := os.Getenv("CNI_SPEC_VERSION")
 		logger.Info("cniVersion:", cniVersion)
-		Context("using cni-genie for configuring canal CNI", func() {
+		Context("using cni-genie for configuring calico CNI", func() {
 			config, err := clientcmd.DefaultClientConfig.ClientConfig()
 			if err != nil {
 				panic(err)
@@ -106,7 +106,7 @@ var _ = Describe("CNIGenie", func() {
 			if err != nil {
 				panic(err)
 			}
-			name := fmt.Sprintf("nginx-canal-%d", rand.Uint32())
+			name := fmt.Sprintf("nginx-calico-%d", rand.Uint32())
 			interfaceName := "eth0"
 			logger.Info(interfaceName)
 
@@ -127,10 +127,10 @@ var _ = Describe("CNIGenie", func() {
 				Expect(ns.Name).To(Equal(TEST_NS))
 			})
 
-			It("should succeed canal networking for pod", func() {
+			It("should succeed calico networking for pod", func() {
 				annots := make(map[string]string)
-				annots["cni"] = "canal"
-				//Create a K8s Pod with canal cni
+				annots["cni"] = "calico"
+				//Create a K8s Pod with calico cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
@@ -145,7 +145,7 @@ var _ = Describe("CNIGenie", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Waiting for the canal pod to have running status")
+				By("Waiting for the calico pod to have running status")
 				By("Waiting 10 seconds")
 				time.Sleep(time.Duration(10 * time.Second))
 				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
@@ -153,12 +153,12 @@ var _ = Describe("CNIGenie", func() {
 				logger.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
-				By("Pod was in Running state... Time to delete the canal pod now...")
+				By("Pod was in Running state... Time to delete the calico pod now...")
 				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
-				By("Check for canal pod deletion")
+				By("Check for calico pod deletion")
 				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
@@ -206,7 +206,7 @@ var _ = Describe("CNIGenie", func() {
 			It("should succeed romana networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "romana"
-				//Create a K8s Pod with canal cni
+				//Create a K8s Pod with calico cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
@@ -282,7 +282,6 @@ var _ = Describe("CNIGenie", func() {
 			It("should succeed weave networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "weave"
-				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
@@ -356,8 +355,7 @@ var _ = Describe("CNIGenie", func() {
 
 			It("should succeed multi-ip networking for pod", func() {
 				annots := make(map[string]string)
-				annots["cni"] = "canal,weave"
-				//Create a K8s Pod with canal cni
+				annots["cni"] = "calico,weave"
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
@@ -432,7 +430,6 @@ var _ = Describe("CNIGenie", func() {
 			It("should succeed nocni networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = " "
-				//Create a K8s Pod with canal cni
 				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,

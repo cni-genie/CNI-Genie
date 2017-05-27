@@ -14,7 +14,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/Huawei-PaaS/CNI-Genie/genie"
+	"CNI-Genie/genie"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"

@@ -21,7 +21,7 @@ package genie
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"CNI-Genie/utils"
 	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -33,12 +33,16 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"github.com/containernetworking/cni/libcni"
+	"sort"
+	"io/ioutil"
 )
 
 const (
 	// MultiIPPreferencesAnnotation is a key used for parsing pod
 	// definitions containing "multi-ip-preferences" annotation
 	MultiIPPreferencesAnnotation = "multi-ip-preferences"
+	DefaultNetDir        = "/etc/cni/net.d"
 )
 
 // PopulateCNIArgs wraps skel.CmdArgs into Genie's native CNIArgs format.
@@ -324,8 +328,8 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	var finalAnnots []string
 
 	if len(annot) == 0 {
-		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Default plugin is canal! annot is %V\n", annot)
-		finalAnnots = []string{"canal"}
+		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Default plugin is weave! annot is %V\n", annot)
+		finalAnnots = []string{"weave"}
 	} else if strings.TrimSpace(annot["cni"]) == "" {
 		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
 		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
@@ -356,6 +360,18 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	return finalAnnots, nil
 }
 
+func ParseCNIConfFromFile(filename string) (utils.NetConf, error) {
+	conf := utils.NetConf{}
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return conf, fmt.Errorf("error reading %s: %s", filename, err)
+	}
+	if err := json.Unmarshal(bytes, &conf); err != nil {
+		return conf, fmt.Errorf("failed to load netconf: %v", err)
+	}
+	return conf, nil
+}
+
 // addNetwork is a core function that delegates call to pull IP from a Container Networking Solution (CNI Plugin)
 func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
 	var result types.Result
@@ -365,62 +381,35 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 		fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie cniName=%v\n", cniName)
-	switch strings.TrimSpace(cniName) {
-	case "romana":
-		conf.Name = "romana-k8s-network" //romana expects this name!
-		conf.IPAM.Type = "romana-ipam"
-		conf.Type = "romana"
-		stdinData, _ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("romana", stdinData)
+
+	files, err := libcni.ConfFiles(DefaultNetDir, []string{".conf"})
+	fmt.Fprintf(os.Stderr, "CNI Genie files =%v\n", files)
+	switch {
+	case err != nil:
+		return nil, err
+	case len(files) == 0:
+		return nil, fmt.Errorf("No networks found in %s", DefaultNetDir)
+	}
+	sort.Strings(files)
+	for _, confFile := range files {
+		confFromFile, err := ParseCNIConfFromFile(confFile)
+		fmt.Fprintf(os.Stderr, "CNI Genie confFromFile =%v\n", confFromFile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil, err
+			fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
+			continue
 		}
-		fmt.Fprintf(os.Stderr, "CNI Genie romana result = %v\n", result)
-	case "weave":
-		conf.Type = "weave-net"
-		stdinData, _ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("weave-net", stdinData)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil, err
+		if strings.Contains(confFile, cniName){
+			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
+
+			conf = confFromFile
+			stdinData, _ = json.Marshal(&conf)
+			result, err = ipam.ExecAdd(conf.Type, stdinData)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(os.Stderr, "CNI Genie result = %v\n", result)
+			break
 		}
-		fmt.Fprintf(os.Stderr, "CNI Genie weave result = %v\n", result)
-	case "calico":
-		conf.Type = "calico"
-		conf.IPAM.Type = "host-local"
-		conf.IPAM.Subnet = "usePodCidr"
-		stdinData, _ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("calico", stdinData)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Fprintf(os.Stderr, "CNI Genie weave result = %v\n", result)
-	case "canal":
-		conf.Type = "calico"
-		conf.IPAM.Type = "host-local"
-		conf.IPAM.Subnet = "usePodCidr"
-		stdinData, _ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("calico", stdinData)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil, err
-		}
-		fmt.Fprintf(os.Stderr, "CNI Genie canal result = %v\n", result)
-	case "flannel":
-		conf.Type = "flannel"
-		conf.Delegate.DelegateType = "flannel"
-		conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
-		conf.Delegate.LogLevel = conf.LogLevel
-		conf.Delegate.Policy = conf.Policy
-		conf.Delegate.Kubernetes = conf.Kubernetes
-		stdinData, _ = json.Marshal(&conf)
-		result, err = ipam.ExecAdd("flannel", stdinData)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie err = %v\n", err)
-			return nil, err
-		}
-		fmt.Fprintf(os.Stderr, "CNI Genie flannel result = %v\n", result)
 	}
 
 	if result != nil {
@@ -438,53 +427,36 @@ func deleteNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils
 	if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(intfId)) != nil {
 		fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
 	}
-	switch strings.TrimSpace(cniName) {
-	case "romana":
-		conf.IPAM.Type = "romana-ipam"
-		conf.Type = "romana"
-		stdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("romana", stdinData)
-		if ipamErr != nil {
-			return ipamErr
+
+	files, err := libcni.ConfFiles(DefaultNetDir, []string{".conf"})
+	fmt.Fprintf(os.Stderr, "CNI Genie files =%v\n", files)
+	switch {
+	case err != nil:
+		return err
+	case len(files) == 0:
+		return fmt.Errorf("No networks found in %s", DefaultNetDir)
+	}
+	sort.Strings(files)
+	for _, confFile := range files {
+		confFromFile, err := ParseCNIConfFromFile(confFile)
+		fmt.Fprintf(os.Stderr, "CNI Genie confFromFile =%v\n", confFromFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
+			continue
 		}
-	case "weave":
-		conf.Type = "weave-net"
-		stdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("weave-net", stdinData)
-		if ipamErr != nil {
-			return ipamErr
-		}
-	case "calico":
-		conf.Type = "calico"
-		conf.IPAM.Type = "host-local"
-		conf.IPAM.Subnet = "usePodCidr"
-		stdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("calico", stdinData)
-		if ipamErr != nil {
-			return ipamErr
-		}
-	case "canal":
-		conf.Type = "calico"
-		conf.IPAM.Type = "host-local"
-		conf.IPAM.Subnet = "usePodCidr"
-		stdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("calico", stdinData)
-		if ipamErr != nil {
-			return ipamErr
-		}
-	case "flannel":
-		conf.Type = "flannel"
-		conf.Delegate.DelegateType = "flannel"
-		conf.Delegate.EtcdEndpoints = conf.EtcdEndpoints
-		conf.Delegate.LogLevel = conf.LogLevel
-		conf.Delegate.Policy = conf.Policy
-		conf.Delegate.Kubernetes = conf.Kubernetes
-		stdinData, _ = json.Marshal(&conf)
-		ipamErr := ipam.ExecDel("flannel", stdinData)
-		if ipamErr != nil {
-			return ipamErr
+		if strings.Contains(confFile, cniName){
+			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
+
+			conf = confFromFile
+			stdinData, _ = json.Marshal(&conf)
+			ipamErr := ipam.ExecDel(conf.Type, stdinData)
+			if ipamErr != nil {
+				return ipamErr
+			}
+			break
 		}
 	}
+
 	return nil
 }
 

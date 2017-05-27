@@ -27,7 +27,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	. "github.com/Huawei-PaaS/CNI-Genie/utils"
+	. "CNI-Genie/utils"
 	"github.com/google/cadvisor/info/v1"
 	"io/ioutil"
 	"net/http"
@@ -147,12 +147,12 @@ func computeNetworkUsage(cinfo []ContainerStatsGenie) string {
 		if c == "weav" {
 			cns[i] = "weave"
 		} else if c == "flan" {
-			cns[i] = "canal"
+			cns[i] = "flannel"
 		} else if c == "cali" {
 			// TODO (Karun): This is a bad fix.
 			// Calico bin wasn't working correctly
 			//cns[i] = "calico"
-			cns[i] = "canal"
+			cns[i] = "calico"
 		}
 	}
 	fmt.Fprintf(os.Stderr, "CAdvisor Client computeNetworkUsage cns = %v\n", cns[0])
