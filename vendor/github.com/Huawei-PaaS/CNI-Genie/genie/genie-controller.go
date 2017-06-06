@@ -116,13 +116,13 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 
 		// fetches an IP from corresponding CNS IPAM and returns result object
 		result, err = addNetwork(conf, i, ele, cniArgs)
-		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork err *** %v\n", err)
-		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork result***  %v\n", result)
+		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork err *** %v\n", err)
+		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork result***  %v\n", result)
 		if err != nil {
 			newErr = err
 		}
 		// Update pod definition with IPs "multi-ip-preferences"
-		err = UpdatePodDefinition(i, result, multiIPPrefAnnot, kubeClient, k8sArgs)
+		multiIPPrefAnnot, err = UpdatePodDefinition(i, result, multiIPPrefAnnot, kubeClient, k8sArgs)
 		if err != nil {
 			newErr = err
 		}
@@ -189,12 +189,12 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 // different configured networking solutions. It is also used in "nocni"
 // case where ideal network has been chosen for the pod. Pod annotation
 // in this case will update with CNS that's chosen at run time.
-func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) error {
+func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) (string, error) {
 	var multiIPPreferences utils.MultiIPPreferences
 
 	if multiIPPrefAnnot == "" {
 		fmt.Fprintf(os.Stderr, "CNI Genie No multi-ip-preferences annotation\n")
-		return nil
+		return multiIPPrefAnnot, nil
 	}
 
 	if err := json.Unmarshal([]byte(multiIPPrefAnnot), &multiIPPreferences); err != nil {
@@ -211,22 +211,22 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 	tmpMultiIPPreferences, err := json.Marshal(&multiIPPreferences)
 
 	if err != nil {
-		return err
+		return multiIPPrefAnnot,err
 	}
 
 	// Get pod defition to update it in next steps
 	pod, err := GetPodDefinition(client, string(k8sArgs.K8S_POD_NAMESPACE), string(k8sArgs.K8S_POD_NAME))
 	if err != nil {
-		return err
+		return multiIPPrefAnnot, err
 	}
 
 	pod.Annotations[MultiIPPreferencesAnnotation] = string(tmpMultiIPPreferences)
 	fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[MultiIPPreferencesAnnotation] after = %v\n", pod.Annotations[MultiIPPreferencesAnnotation])
 	pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
 	if err != nil {
-		return fmt.Errorf("CNI Genie Error updating pod = %s", err)
+		return multiIPPrefAnnot,fmt.Errorf("CNI Genie Error updating pod = %s", err)
 	}
-	return nil
+	return string(tmpMultiIPPreferences), nil
 }
 
 // GetPodDefinition gets pod definition through k8s api server
