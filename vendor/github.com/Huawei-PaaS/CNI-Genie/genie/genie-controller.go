@@ -116,8 +116,8 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 
 		// fetches an IP from corresponding CNS IPAM and returns result object
 		result, err = addNetwork(conf, i, ele, cniArgs)
-		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork err *** %v\n", err)
-		fmt.Fprintf(os.Stderr, "CNI Genie Error addNetwork result***  %v\n", result)
+		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork err *** %v\n", err)
+		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork result***  %v\n", result)
 		if err != nil {
 			newErr = err
 		}
