@@ -13,13 +13,10 @@ Here is a 6 minute demo video that demonstrates 3 scenarios
 
 [![asciicast](https://asciinema.org/a/118191.png)](https://asciinema.org/a/118191)
 
-## Contributing
-We always welcome contributions to our little experiment. 
-Feel free to reach out to these folks:
+# Contributing
+[Contributing](CONTRIBUTING.md)
 
-karun.chennuri@huawei.com
-
-kaveh.shafiee@huawei.com
+[Code of Conduct](CODE_OF_CONDUCT.md)
 
 # Why we created CNI-Genie?
 
