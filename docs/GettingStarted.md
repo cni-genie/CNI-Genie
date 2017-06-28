@@ -58,4 +58,11 @@ $ cat /dev/null > /var/log/syslog
 $ tail -f /var/log/syslog | grep 'CNI'
 ```
 
-That's all for now!
+### Troubleshooting
+
+Note: one a single node cluster, after your Kubernetes master is initialized successfully, make sure you are able to schedule pods on the master by running:
+```
+$ kubectl taint nodes --all dedicated-
+```
+Note: most plugins use differenet installation files for Kuberenetes 1.5 & 1.6. Make sure you use the right one!
+
