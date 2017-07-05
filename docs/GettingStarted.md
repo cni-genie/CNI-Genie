@@ -6,13 +6,29 @@
   * We tested on Ubuntu 14.04 & 16.04
 * Docker installed
 * Kubernetes cluster running with CNI enabled
-  * One easy way to bring up a cluster is to use [kubeadm](https://kubernetes.io/docs/getting-started-guides/kubeadm/). We used
-  ```
-  $ kubeadm init --use-kubernetes-version=v1.5.8-beta.0 --pod-network-cidr=10.244.0.0/16
-  ```
-* One(or more) CNI plugin(s) installed, e.g., Canal, Weave, Calico
-  * Use this [link](https://github.com/projectcalico/canal/tree/master/k8s-install) to install Canal
+  * One easy way to bring up a cluster is to use [kubeadm](https://kubernetes.io/docs/getting-started-guides/kubeadm/): 
+      * We used
+      ```
+      $ kubeadm init --use-kubernetes-version=v1.5.8-beta.0 --pod-network-cidr=10.244.0.0/16
+      $ mkdir -p $HOME/.kube
+      $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+      ```
+      * To schedule pods on the master, e.g. for a single-machine Kubernetes cluster, run:
+      ```
+      $ kubectl taint nodes --all dedicated-
+      ```
+* One (or more) CNI plugin(s) installed, e.g., Canal, Weave, Calico
+  * Use this [link](https://github.com/projectcalico/canal/tree/master/k8s-install) to install Canal 
+      * For Kubernetes 1.5 we used:
+      ```
+      $ kubectl apply -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/canal.yaml
+      ```
   * Use this [link](https://www.weave.works/docs/net/latest/kube-addon/) to install Weave
+      * For Kubernetes 1.5 we used:
+      ```
+      $ kubectl apply -f https://git.io/weave-kube
+      ```  
   * Use this [link](http://docs.projectcalico.org/v2.2/getting-started/kubernetes/installation/hosted/) to install Calico
 
 ### Installing genie
