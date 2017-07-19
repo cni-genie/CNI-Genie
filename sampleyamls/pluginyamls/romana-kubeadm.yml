@@ -1,0 +1,150 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: romana-services
+  namespace: kube-system
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: romana-secrets
+  namespace: kube-system
+data:
+  datastore-password: cm9tYW5h
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: romana-services
+  namespace: kube-system
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: romana-services
+    spec:
+      hostNetwork: true
+      serviceAccountName: romana-services
+      containers:
+      - name: romana-etcd
+        image: gcr.io/google_containers/etcd-amd64:3.0.14-kubeadm
+        command:
+        - etcd
+        - "--listen-client-urls=http://127.0.0.1:12379"
+        - "--listen-peer-urls=http://127.0.0.1:12380"
+        - "--advertise-client-urls=http://127.0.0.1:12379"
+        - "--data-dir=/var/etcd/data"
+        volumeMounts:
+        - name: etcd-data
+          mountPath: "/var/etcd/data"
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: 12379
+            host: 127.0.0.1
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
+      - name: romana-datastore
+        image: mysql:5
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: romana-secrets
+              key: datastore-password
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+      - name: romana-services
+        image: quay.io/romana/services:v1.0.1
+        imagePullPolicy: Always
+        args:
+        - --cidr=100.112.0.0/12
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: romana-secrets
+              key: datastore-password
+        volumeMounts:
+        - name: log-path
+          mountPath: /var/log/romana
+      volumes:
+      - name: etcd-data
+        hostPath:
+          path: "/var/lib/romana/etcd-db"
+      - name: mysql-data
+        hostPath:
+          path: "/var/lib/romana/mysql-db"
+      - name: log-path
+        hostPath:
+          path: /var/log/romana
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: romana-root
+  namespace: kube-system
+spec:
+  ports:
+  - name: root
+    port: 9600
+    protocol: TCP
+    targetPort: 9600
+  selector:
+    app: romana-services
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: romana-agent
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        app: romana-agent
+    spec:
+      hostNetwork: true
+      containers:
+      - name: romana-agent
+        image: quay.io/romana/agent:v1.0.1
+        imagePullPolicy: Always
+        args:
+        - --cluster-ip-cidr=10.96.0.0/12
+        - --cni-image=quay.io/romana/cni:v1.0.1
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: host-usr-local-bin
+          mountPath: /host/usr/local/bin
+        - name: host-etc-romana
+          mountPath: /host/etc/romana
+        - name: host-cni-bin
+          mountPath: /host/opt/cni/bin
+        - name: host-cni-net-d
+          mountPath: /host/etc/cni/net.d
+        - name: log-path
+          mountPath: /var/log/romana
+      volumes:
+      - name: host-usr-local-bin
+        hostPath:
+          path: /usr/local/bin
+      - name: host-etc-romana
+        hostPath:
+          path: /etc/romana
+      - name: host-cni-bin
+        hostPath:
+          path: /opt/cni/bin
+      - name: host-cni-net-d
+        hostPath:
+          path: /etc/cni/net.d
+      - name: log-path
+        hostPath:
+          path: /var/log/romana
+
