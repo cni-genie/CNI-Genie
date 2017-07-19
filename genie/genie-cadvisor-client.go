@@ -27,7 +27,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	. "CNI-Genie/utils"
+	. "github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/google/cadvisor/info/v1"
 	"io/ioutil"
 	"net/http"

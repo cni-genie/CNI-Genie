@@ -21,7 +21,7 @@ package genie
 import (
 	"encoding/json"
 	"fmt"
-	"CNI-Genie/utils"
+	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
