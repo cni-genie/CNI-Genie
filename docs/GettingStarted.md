@@ -7,9 +7,9 @@
 * Docker installed
 * Kubernetes cluster running with CNI enabled
   * One easy way to bring up a cluster is to use [kubeadm](https://kubernetes.io/docs/getting-started-guides/kubeadm/): 
-      * We used
+      * We tested on Kubernetes 1.5, 1.6, 1.7
       ```
-      $ kubeadm init --use-kubernetes-version=v1.5.8-beta.0 --pod-network-cidr=10.244.0.0/16
+      $ kubeadm init --use-kubernetes-version=v1.7.0 --pod-network-cidr=10.244.0.0/16
       $ mkdir -p $HOME/.kube
       $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -18,30 +18,16 @@
       ```
       $ kubectl taint nodes --all dedicated-
       ```
-* One (or more) CNI plugin(s) installed, e.g., Canal, Weave, Calico
-  * Use this [link](https://github.com/projectcalico/canal/tree/master/k8s-install) to install Canal 
-      * For Kubernetes 1.5 we used:
-      ```
-      $ kubectl apply -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/canal.yaml
-      ```
-  * Use this [link](https://www.weave.works/docs/net/latest/kube-addon/) to install Weave
-      * For Kubernetes 1.5 we used:
-      ```
-      $ kubectl apply -f https://git.io/weave-kube
-      ```  
-  * Use this [link](http://docs.projectcalico.org/v2.2/getting-started/kubernetes/installation/hosted/) to install Calico
+* One (or more) CNI plugin(s) installed, e.g., Canal, Weave, Flannel
+  * Use this [link](https://github.com/projectcalico/canal/tree/master/k8s-install) to install Canal       
+  * Use this [link](https://www.weave.works/docs/net/latest/kube-addon/) to install Weave      
+  * Use this [link](https://github.com/coreos/flannel/blob/master/Documentation/kube-flannel.yml) to install Flannel
 
 ### Installing genie
 
 We install genie as a Docker Container on every node
-
-* Kubernetes versions up to 1.5:
 ```
 $ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.5/genie.yaml
-```
-* Kubernetes versions up to 1.6:
-```
-coming soon...
 ```
 
 ### Making changes to and build from source
@@ -80,5 +66,5 @@ $ tail -f /var/log/syslog | grep 'CNI'
 ```
 $ kubectl taint nodes --all dedicated-
 ```
-* Note: most plugins use differenet installation files for Kuberenetes 1.5 & 1.6. Make sure you use the right one!
+* Note: most plugins use differenet installation files for Kuberenetes 1.5, 1.6 & 1.7. Make sure you use the right one!
 
