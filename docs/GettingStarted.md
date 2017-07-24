@@ -46,8 +46,15 @@ $ cp dist/genie /opt/cni/bin/genie
 ### Test process
 
 To run ginkgo tests for CNI-Genie run the following command:
+
+If Kubernetes cluster is 1.7+
 ```
-$ make test
+$ make test testKubeVersion=1.7 testKubeConfig=/root/admin.conf
+```
+
+If Kubernetes cluster is 1.5.x
+```
+$ make test testKubeVersion=1.5
 ```
 
 ### Genie Logs
