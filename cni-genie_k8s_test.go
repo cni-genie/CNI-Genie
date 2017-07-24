@@ -2,101 +2,42 @@ package main_test
 
 import (
 	"fmt"
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/projectcalico/cni-plugin/utils"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	meta_v1 "k8s.io/client-go/pkg/apis/meta/v1"
+	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"math/rand"
-	"net"
 	"os"
 	"time"
 
+	"flag"
 	"k8s.io/client-go/pkg/api/errors"
+	"k8s.io/client-go/rest"
 )
 
-const TEST_NS = "test"
+const TEST_NAMESPACE = "test"
+
+var testKubeVersion string
+var testKubeConfig string
+var clientset *kubernetes.Clientset
 
 func init() {
-
+	// go test -args --testKubeVersion="1.6" --testKubeConfig="/root/admin.conf"
+	// To override default values pass --testKubeVersion --testKubeConfig flags
+	flag.StringVar(&testKubeVersion, "testKubeVersion", "1.5", "Specify kubernetes version eg: 1.5 or 1.6 or 1.7")
+	flag.StringVar(&testKubeConfig, "testKubeConfig", "/root/admin.conf", "Specify testKubeConfig path eg: /root/kubeconfig")
 }
 
 var _ = Describe("CNIGenie", func() {
 
 	hostname, _ := os.Hostname()
-	utils.ConfigureLogging("info")
-	logger := utils.CreateContextLogger("genie_k8s_tests")
-	logger.Info("Inside CNIGenie tests for k8s:", hostname)
-
-	Describe("Run Genie for k8s", func() {
-		logger.Info("Inside Run Genie for k8s...")
-		logger.Info("Test Namespace:", TEST_NS)
-		logger.Info("Hostname:", hostname)
-		cniVersion := os.Getenv("CNI_SPEC_VERSION")
-		logger.Info("cniVersion:", cniVersion)
-		Context("using host-local IPAM", func() {
-			netconf := fmt.Sprintf(`
-			{
-			  "cniVersion": "%s",
-			  "name": "net1",
-			  "type": "genie",
-			  "etcd_endpoints": "http://%s:2379",
-			  "ipam": {
-			    "type": "host-local",
-			    "subnet": "10.0.0.0/8"
-			  }, "kubernetes": {
-				  "k8s_api_root": "http://127.0.0.1:8080"
-				},
-				"policy": {"type": "k8s"},
-				"log_level":"info"
-			}`, cniVersion, os.Getenv("ETCD_IP"))
-
-			logger.Info("ETCD_IP:", os.Getenv("ETCD_IP"))
-			logger.Info("neconf:", netconf)
-			It("successfully networks the namespace", func() {
-				logger.Info("Inside successfully networks the namespace...")
-				Expect(cniVersion).To(Equal("0.3.0"))
-				Expect(os.Getenv("ETCD_IP")).To(Equal("127.0.0.1"))
-			})
-		})
-	})
-
-	Describe("Check for available CNSs", func() {
-		By("List all running CNSs on the node")
-		logger.Info("Inside Check for available CNSs")
-		Context("genie listing CNS", func() {
-			l, err := net.Interfaces()
-			if err != nil {
-				panic(err)
-
-			}
-			It("successfully identify CNS", func() {
-				cnsAvailable := false
-				for _, f := range l {
-					if len(f.Name) > 4 {
-						if f.Name[:4] == "cali" {
-							cnsAvailable = true
-							Expect(f.Name).To(ContainSubstring("cali"), " of type Calico")
-						} else if f.Name[:4] == "flan" {
-							cnsAvailable = true
-							Expect(f.Name).To(ContainSubstring("flanne"), " of type Flannel")
-						} else if f.Name[:4] == "weav" {
-							cnsAvailable = true
-							Expect(f.Name).To(ContainSubstring("weav"), " of type weave")
-						}
-					}
-				}
-				Expect(cnsAvailable).To(Equal(true))
-			})
-		})
-	})
+	glog.Info("Inside CNIGenie tests for k8s:", hostname)
 
 	Describe("Add calico networking for Pod", func() {
-		logger.Info("Inside Check for adding Calico networking")
-		cniVersion := os.Getenv("CNI_SPEC_VERSION")
-		logger.Info("cniVersion:", cniVersion)
+		glog.Info("Inside Check for adding Calico networking")
 		Context("using cni-genie for configuring calico CNI", func() {
 			config, err := clientcmd.DefaultClientConfig.ClientConfig()
 			if err != nil {
@@ -108,30 +49,13 @@ var _ = Describe("CNIGenie", func() {
 			}
 			name := fmt.Sprintf("nginx-calico-%d", rand.Uint32())
 			interfaceName := "eth0"
-			logger.Info(interfaceName)
-
-			It("should create test namespace", func() {
-				ns, err := clientset.Namespaces().Create(&v1.Namespace{
-					ObjectMeta: v1.ObjectMeta{Name: TEST_NS},
-				})
-				if err != nil && errors.IsAlreadyExists(err) {
-					//do nothing ignore
-				} else if err != nil {
-					//if some other error other than Already Exists
-					Expect(err).ShouldNot(HaveOccurred())
-				}
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
-				ns, err = clientset.Namespaces().Get(TEST_NS, meta_v1.GetOptions{})
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(ns.Name).To(Equal(TEST_NS))
-			})
+			glog.Info(interfaceName)
 
 			It("should succeed calico networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "calico"
 				//Create a K8s Pod with calico cni
-				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
+				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -148,18 +72,18 @@ var _ = Describe("CNIGenie", func() {
 				By("Waiting for the calico pod to have running status")
 				By("Waiting 10 seconds")
 				time.Sleep(time.Duration(10 * time.Second))
-				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				logger.Info("pod status =", string(pod.Status.Phase))
+				glog.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
 				By("Pod was in Running state... Time to delete the calico pod now...")
-				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for calico pod deletion")
-				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
 				}
@@ -169,10 +93,7 @@ var _ = Describe("CNIGenie", func() {
 	})
 
 	Describe("Add romana networking for Pod", func() {
-		logger.Info("Inside Check for adding romana networking")
-
-		cniVersion := os.Getenv("CNI_SPEC_VERSION")
-		logger.Info("cniVersion:", cniVersion)
+		glog.Info("Inside Check for adding romana networking")
 		Context("using cni-genie for configuring romana CNI", func() {
 			config, err := clientcmd.DefaultClientConfig.ClientConfig()
 			if err != nil {
@@ -184,30 +105,13 @@ var _ = Describe("CNIGenie", func() {
 			}
 			name := fmt.Sprintf("nginx-romana-%d", rand.Uint32())
 			interfaceName := "eth0"
-			logger.Info(interfaceName)
-
-			It("should create test namespace", func() {
-				ns, err := clientset.Namespaces().Create(&v1.Namespace{
-					ObjectMeta: v1.ObjectMeta{Name: TEST_NS},
-				})
-				if err != nil && errors.IsAlreadyExists(err) {
-					//do nothing ignore
-				} else if err != nil {
-					//if some other error other than Already Exists
-					Expect(err).ShouldNot(HaveOccurred())
-				}
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
-				ns, err = clientset.Namespaces().Get(TEST_NS, meta_v1.GetOptions{})
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(ns.Name).To(Equal(TEST_NS))
-			})
+			glog.Info(interfaceName)
 
 			It("should succeed romana networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "romana"
 				//Create a K8s Pod with calico cni
-				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
+				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -224,18 +128,18 @@ var _ = Describe("CNIGenie", func() {
 				By("Waiting for the romana pod to have running status")
 				By("Waiting 10 seconds")
 				time.Sleep(time.Duration(10 * time.Second))
-				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				logger.Info("pod status =", string(pod.Status.Phase))
+				glog.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
 				By("Pod was in Running state... Time to delete the romana pod now...")
-				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for pod deletion")
-				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
 				}
@@ -245,10 +149,7 @@ var _ = Describe("CNIGenie", func() {
 	})
 
 	Describe("Add weave networking for Pod", func() {
-		logger.Info("Inside Check for adding weave networking")
-
-		cniVersion := os.Getenv("CNI_SPEC_VERSION")
-		logger.Info("cniVersion:", cniVersion)
+		glog.Info("Inside Check for adding weave networking")
 		Context("using cni-genie for configuring weave CNI", func() {
 			config, err := clientcmd.DefaultClientConfig.ClientConfig()
 			if err != nil {
@@ -260,29 +161,12 @@ var _ = Describe("CNIGenie", func() {
 			}
 			name := fmt.Sprintf("nginx-weave-%d", rand.Uint32())
 			interfaceName := "eth0"
-			logger.Info(interfaceName)
-
-			It("should create test namespace", func() {
-				ns, err := clientset.Namespaces().Create(&v1.Namespace{
-					ObjectMeta: v1.ObjectMeta{Name: TEST_NS},
-				})
-				if err != nil && errors.IsAlreadyExists(err) {
-					//do nothing ignore
-				} else if err != nil {
-					//if some other error other than Already Exists
-					Expect(err).ShouldNot(HaveOccurred())
-				}
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
-				ns, err = clientset.Namespaces().Get(TEST_NS, meta_v1.GetOptions{})
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(ns.Name).To(Equal(TEST_NS))
-			})
+			glog.Info(interfaceName)
 
 			It("should succeed weave networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "weave"
-				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
+				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -299,18 +183,18 @@ var _ = Describe("CNIGenie", func() {
 				By("Waiting for the weave pod to have running status")
 				By("Waiting 10 seconds")
 				time.Sleep(time.Duration(10 * time.Second))
-				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				logger.Info("pod status =", string(pod.Status.Phase))
+				glog.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
 				By("Pod was in Running state... Time to delete the weave pod now...")
-				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for pod deletion")
-				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
 				}
@@ -320,9 +204,7 @@ var _ = Describe("CNIGenie", func() {
 	})
 
 	Describe("Add multi-ip networking for Pod", func() {
-		logger.Info("Inside Check for adding multi-ip networking")
-		cniVersion := os.Getenv("CNI_SPEC_VERSION")
-		logger.Info("cniVersion:", cniVersion)
+		glog.Info("Inside Check for adding multi-ip networking")
 		Context("using cni-genie for configuring multi-ip CNI", func() {
 			config, err := clientcmd.DefaultClientConfig.ClientConfig()
 			if err != nil {
@@ -334,29 +216,12 @@ var _ = Describe("CNIGenie", func() {
 			}
 			name := fmt.Sprintf("nginx-multiip-%d", rand.Uint32())
 			interfaceName := "eth0"
-			logger.Info(interfaceName)
-
-			It("should create test namespace", func() {
-				ns, err := clientset.Namespaces().Create(&v1.Namespace{
-					ObjectMeta: v1.ObjectMeta{Name: TEST_NS},
-				})
-				if err != nil && errors.IsAlreadyExists(err) {
-					//do nothing ignore
-				} else if err != nil {
-					//if some other error other than Already Exists
-					Expect(err).ShouldNot(HaveOccurred())
-				}
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
-				ns, err = clientset.Namespaces().Get(TEST_NS, meta_v1.GetOptions{})
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(ns.Name).To(Equal(TEST_NS))
-			})
+			glog.Info(interfaceName)
 
 			It("should succeed multi-ip networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "calico,weave"
-				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
+				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -373,18 +238,18 @@ var _ = Describe("CNIGenie", func() {
 				By("Waiting for the multi-ip pod to have running status")
 				By("Waiting 10 seconds")
 				time.Sleep(time.Duration(10 * time.Second))
-				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				logger.Info("pod status =", string(pod.Status.Phase))
+				glog.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
 				By("Pod was in Running state... Time to delete the multi-ip pod now...")
-				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for multi-ip pod deletion")
-				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
 				}
@@ -394,9 +259,7 @@ var _ = Describe("CNIGenie", func() {
 	})
 
 	Describe("Add nocni networking for Pod", func() {
-		logger.Info("Inside Check for adding nocni networking")
-		cniVersion := os.Getenv("CNI_SPEC_VERSION")
-		logger.Info("cniVersion:", cniVersion)
+		glog.Info("Inside Check for adding nocni networking")
 		Context("using cni-genie for configuring nocni CNI", func() {
 			config, err := clientcmd.DefaultClientConfig.ClientConfig()
 			if err != nil {
@@ -408,29 +271,12 @@ var _ = Describe("CNIGenie", func() {
 			}
 			name := fmt.Sprintf("nginx-nocni-%d", rand.Uint32())
 			interfaceName := "eth0"
-			logger.Info(interfaceName)
-
-			It("should create test namespace", func() {
-				ns, err := clientset.Namespaces().Create(&v1.Namespace{
-					ObjectMeta: v1.ObjectMeta{Name: TEST_NS},
-				})
-				if err != nil && errors.IsAlreadyExists(err) {
-					//do nothing ignore
-				} else if err != nil {
-					//if some other error other than Already Exists
-					Expect(err).ShouldNot(HaveOccurred())
-				}
-				By("Waiting 5 seconds")
-				time.Sleep(time.Duration(5 * time.Second))
-				ns, err = clientset.Namespaces().Get(TEST_NS, meta_v1.GetOptions{})
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(ns.Name).To(Equal(TEST_NS))
-			})
+			glog.Info(interfaceName)
 
 			It("should succeed nocni networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = " "
-				_, err = clientset.Pods(TEST_NS).Create(&v1.Pod{
+				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -447,18 +293,18 @@ var _ = Describe("CNIGenie", func() {
 				By("Waiting for the nocni pod to have running status")
 				By("Waiting 10 seconds")
 				time.Sleep(time.Duration(10 * time.Second))
-				pod, err := clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				logger.Info("pod status =", string(pod.Status.Phase))
+				glog.Info("pod status =", string(pod.Status.Phase))
 				Expect(string(pod.Status.Phase)).To(Equal("Running"))
 
 				By("Pod was in Running state... Time to delete the nocni pod now...")
-				err = clientset.Pods(TEST_NS).Delete(name, &v1.DeleteOptions{})
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for nocni pod deletion")
-				_, err = clientset.Pods(TEST_NS).Get(name, meta_v1.GetOptions{})
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
 				}
@@ -467,23 +313,50 @@ var _ = Describe("CNIGenie", func() {
 		})
 
 	})
-
-	//No guarantee this test case executes in the end.
-	//Ginkgo doesn't execute in sequential order
-	/*Describe("Cleanup Tests", func() {
-		logger.Info("Inside cleanup tests")
-		By("Tear-down Test namespace...")
-		config, err := clientcmd.DefaultClientConfig.ClientConfig()
-		if err != nil {
-			panic(err)
-		}
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err)
-		}
-		err = clientset.Namespaces().Delete(TEST_NS, &v1.DeleteOptions{})
-
-		By("Waiting 10 seconds")
-		time.Sleep(time.Duration(10 * time.Second))
-	})*/
 })
+var _ = BeforeSuite(func() {
+	var config *rest.Config
+	var err error
+	glog.Infof("Kube version %s", testKubeVersion)
+	if testKubeVersion == "1.5" {
+		config, err = clientcmd.DefaultClientConfig.ClientConfig()
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags("", testKubeConfig)
+	}
+	if err != nil {
+		panic(err)
+	}
+	clientset, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+	createNamespace(clientset)
+})
+
+var _ = AfterSuite(func() {
+	// Delete namespace
+	err := clientset.Namespaces().Delete(TEST_NAMESPACE, &v1.DeleteOptions{})
+	// Delete all pods
+	err = clientset.Pods(TEST_NAMESPACE).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+})
+
+func createNamespace(clientset *kubernetes.Clientset) {
+	ns, err := clientset.Namespaces().Create(&v1.Namespace{
+		ObjectMeta: v1.ObjectMeta{Name: TEST_NAMESPACE},
+	})
+	if err != nil {
+		if errors.IsAlreadyExists(err) {
+			return
+		} else {
+			Expect(err).ShouldNot(HaveOccurred())
+		}
+	}
+	By("Waiting 5 seconds")
+	time.Sleep(time.Duration(5 * time.Second))
+	ns, err = clientset.Namespaces().Get(TEST_NAMESPACE, metav1.GetOptions{})
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(ns.Name).To(Equal(TEST_NAMESPACE))
+}
