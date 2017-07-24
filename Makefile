@@ -31,4 +31,4 @@ dist/genie: $(SRCFILES)
 
 # Build the genie cni plugin tests
 dist/genie-test: $(TEST_SRCFILES)
-	@GOPATH=$(GO_PATH) CGO_ENABLED=0 ETCD_IP=127.0.0.1 PLUGIN=genie CNI_SPEC_VERSION=0.3.0 go test
+	@GOPATH=$(GO_PATH) CGO_ENABLED=0 ETCD_IP=127.0.0.1 PLUGIN=genie CNI_SPEC_VERSION=0.3.0 go test -args --testKubeVersion=$(testKubeVersion) --testKubeConfig=$(testKubeConfig)
