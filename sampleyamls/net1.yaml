@@ -1,0 +1,7 @@
+apiVersion: alpha.network.k8s.io/v1
+kind: Network
+metadata:
+  name: net1
+  namespace: default
+spec:
+  plugin: "flannel"

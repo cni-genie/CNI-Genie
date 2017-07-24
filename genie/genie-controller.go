@@ -36,13 +36,14 @@ import (
 	"github.com/containernetworking/cni/libcni"
 	"sort"
 	"io/ioutil"
+	"os/exec"
 )
 
 const (
 	// MultiIPPreferencesAnnotation is a key used for parsing pod
 	// definitions containing "multi-ip-preferences" annotation
 	MultiIPPreferencesAnnotation = "multi-ip-preferences"
-	DefaultNetDir        = "/etc/cni/net.d"
+	DefaultNetDir                = "/etc/cni/net.d"
 )
 
 // PopulateCNIArgs wraps skel.CmdArgs into Genie's native CNIArgs format.
@@ -323,6 +324,17 @@ func ParsePodAnnotationsForMultiIPPrefs(client *kubernetes.Clientset, k8sArgs ut
 	return multiIpAnno
 }
 
+// ParsePodAnnotationsForNetworks does following tasks
+// - get pod definition
+// - parses annotation section for "networks"
+// - Returns string
+func ParsePodAnnotationsForNetworks(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) string {
+	annot, _ := getK8sPodAnnotations(client, k8sArgs)
+	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
+	networks := annot["networks"]
+	return networks
+}
+
 //  parseCNIAnnotations parses pod yaml defintion for "cni" annotations.
 func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) ([]string, error) {
 	var finalAnnots []string
@@ -331,27 +343,50 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Default plugin is weave! annot is %V\n", annot)
 		finalAnnots = []string{"weave"}
 	} else if strings.TrimSpace(annot["cni"]) == "" {
-		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
-		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
-		cns, err := GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie GetCNSOrderByNetworkBandwith err= %v\n", err)
-			return finalAnnots, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
+		networksAnnot := ParsePodAnnotationsForNetworks(client, k8sArgs)
+		if networksAnnot == "" {
+			glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
+			//TODO (Kaveh): Get this cAdvisor URL from genie conf file
+			cns, err := GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie GetCNSOrderByNetworkBandwith err= %v\n", err)
+				return finalAnnots, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
+			}
+			fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
+			pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+			if err != nil {
+				return finalAnnots, fmt.Errorf("CNI Genie Error updating pod = %s", err)
+			}
+			fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n", pod.Annotations["cni"])
+			pod.Annotations["cni"] = cns
+			pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+			if err != nil {
+				return finalAnnots, fmt.Errorf("CNI Genie Error updating pod = %s", err)
+			}
+			podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+			fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n", podTmp.Annotations["cni"])
+			finalAnnots = []string{cns}
+		} else {
+			fmt.Fprintf(os.Stderr, "CNI Genie networks annotation passed\n")
+			out, err := exec.Command("kubectl", "get", "networks", strings.TrimSpace(annot["networks"]), "-oyaml").Output()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie cmdOut err= %v\n", err)
+			}
+			tmp := strings.Split(string(out), "plugin: ")
+			tmp = strings.Split(tmp[1], "\n")
+			cns := tmp[0]
+			fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
+			pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+			if err != nil {
+				return finalAnnots, fmt.Errorf("CNI Genie Error updating pod = %s", err)
+			}
+			pod.Annotations["cni"] = cns
+			pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
+			if err != nil {
+				return finalAnnots, fmt.Errorf("CNI Genie Error updating pod = %s", err)
+			}
+			finalAnnots = []string{cns}
 		}
-		fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
-		pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
-		if err != nil {
-			return finalAnnots, fmt.Errorf("CNI Genie Error updating pod = %s", err)
-		}
-		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] before = %s\n", pod.Annotations["cni"])
-		pod.Annotations["cni"] = cns
-		pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
-		if err != nil {
-			return finalAnnots, fmt.Errorf("CNI Genie Error updating pod = %s", err)
-		}
-		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
-		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n", podTmp.Annotations["cni"])
-		finalAnnots = []string{cns}
 	} else {
 		finalAnnots = strings.Split(annot["cni"], ",")
 		fmt.Fprintf(os.Stderr, "CNI Genie annots= %v\n", finalAnnots)
@@ -398,7 +433,7 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 			fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
 			continue
 		}
-		if strings.Contains(confFile, cniName){
+		if strings.Contains(confFile, cniName) && cniName != ""{
 			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
 
 			conf = confFromFile
@@ -444,7 +479,7 @@ func deleteNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils
 			fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
 			continue
 		}
-		if strings.Contains(confFile, cniName){
+		if strings.Contains(confFile, cniName) && cniName != ""{
 			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
 
 			conf = confFromFile
