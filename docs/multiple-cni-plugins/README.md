@@ -21,68 +21,47 @@ So, CNI-Genie "Multiple CNI Plugins" feature is designed to solve this problem w
 
 ## How CNI-Genie feature 1 works?
 
-* Step 1: 
-  * We start Kubelet with **"genie"** as the CNI **"type"**. Note that for this to work we must have already placed **genie** binary under /opt/cni/bin as detailed in [getting started](../GettingStarted.md)
-  * This is done by passing /etc/cni/net.d/genie.conf to kubelet
-
-```json
-{
-    "name": "k8s-pod-network",
-    "type": "genie",
-    "etcd_endpoints": "http://10.96.232.136:6666",
-    "log_level": "debug",
-    "policy": {
-      "type": "k8s",
-       "k8s_api_root": "https://10.96.0.1:443",
-       "k8s_auth_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJjYWxpY28tY25pLXBsdWdpbi10b2tlbi13Zzh3OSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJjYWxpY28tY25pLXBsdWdpbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImJlZDY2NTE3LTFiZjItMTFlNy04YmU5LWZhMTYzZTRkZWM2NyIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTpjYWxpY28tY25pLXBsdWdpbiJ9.GEAcibv-urfWRGTSK0gchlCB6mtCxbwnfgxgJYdEKRLDjo7Sjyekg5lWPJoMopzzPu8_-Tddd-yPZDJc44NCGRep7_ovjjJdlQvjhc0g1XA7NS8W0OMNHUJAzueyn4iuEwDHR7oNS_nwMqsfzgCsiIRkc7NkQDtKaBj8GOYTz9126zk37TqXylh7hMKlwDFkv9vCBcPv-nYU22UM67Ux6emAtf1g1Yw9i8EfOkbuqURir66jtcnwh3HLPSYMAEyADxYtYAxG9Ca-HhdXXsvnQxhd4P0h2ctgg0_NLTO6WRX47C3GNheLmq0tNttFXya0mHhcElSPQFZftzGw8ZvxTQ"
-      },
-    "kubernetes": {
-      "kubeconfig": "/etc/cni/net.d/genie-kubeconfig"
-    }
-}
-```
-  
+* Step 1: CNI-Genie should be installed as per instructions in [getting started](../GettingStarted.md)  
 * Step 2:
   *  The user manually select the CNI plugin that he wants to add to a container upon creating a pod object. This goes under pod **annotations**
+  
   *  Example 1: for Canal CNI plugin
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-canal-master
-  labels:
-    app: web
-  annotations:
-    cni: "canal"
-spec:
-  containers:
-    - name: key-value-store
-      image: nginx:latest
-      imagePullPolicy: IfNotPresent
-      ports:
-        - containerPort: 6379
-```
+  ```yaml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: nginx-canal-master
+    labels:
+      app: web
+    annotations:
+      cni: "canal"
+  spec:
+    containers:
+      - name: key-value-store
+        image: nginx:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 6379
+  ```
 
   *  Example 2: for Weave CNI plugin
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-weave-master
-  labels:
-    app: web
-  annotations:
-    cni: "weave"
-spec:
-  containers:
-    - name: key-value-store
-      image: nginx:latest
-      imagePullPolicy: IfNotPresent
-      ports:
-        - containerPort: 6379
-```
+  ```yaml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: nginx-weave-master
+    labels:
+      app: web
+    annotations:
+      cni: "weave"
+  spec:
+    containers:
+      - name: key-value-store
+        image: nginx:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 6379
+  ```
 
 * Step 3
   * CNI-Genie gets pod name from args passed by kubelet
@@ -93,8 +72,6 @@ spec:
 
 * Step 5
   * CNI-Genie calls the network choice requested by the user
-
-![image](how-step5.png)
 
 
 ### You can find here our [CNI-Genie Feature Set](../CNIGenieFeatureSet.md)
