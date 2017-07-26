@@ -97,7 +97,7 @@ spec:
 ![image](how-step5.png)
 
 
-### You can find here our [CNI-Genie Feature Set](docs/CNIGenieFeatureSet.md)
+### You can find here our [CNI-Genie Feature Set](../CNIGenieFeatureSet.md)
 
 ### [High-Level Design](../HLD.md)
 
