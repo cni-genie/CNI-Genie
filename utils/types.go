@@ -16,11 +16,12 @@
 package utils
 
 import (
+	"net"
+	"time"
+
 	"github.com/containernetworking/cni/pkg/types"
 	c "github.com/google/cadvisor/info/v1"
 	v1 "github.com/projectcalico/cni-plugin/utils"
-	"net"
-	"time"
 )
 
 type ContainerInfoGenie struct {
@@ -68,6 +69,7 @@ type NetConf struct {
 		IPv4Pools  []string `json:"ipv4_pools,omitempty"`
 		IPv6Pools  []string `json:"ipv6_pools,omitempty"`
 	} `json:"ipam,omitempty"`
+	Default        string        `json:"default"`
 	MTU            int           `json:"mtu"`
 	Hostname       string        `json:"hostname"`
 	DatastoreType  string        `json:"datastore_type"`
