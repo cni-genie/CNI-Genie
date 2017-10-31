@@ -22,21 +22,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/containernetworking/cni/libcni"
 	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/golang/glog"
+	"io/ioutil"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
-	"github.com/containernetworking/cni/libcni"
-	"sort"
-	"io/ioutil"
-	"os/exec"
 )
 
 const (
@@ -44,6 +44,16 @@ const (
 	// definitions containing "multi-ip-preferences" annotation
 	MultiIPPreferencesAnnotation = "multi-ip-preferences"
 	DefaultNetDir                = "/etc/cni/net.d"
+	// DefaultPluginDir specifies the default directory path for cni binary files
+	DefaultPluginDir = "/opt/cni/bin"
+	// ConfFilePermission specifies the default permission for conf file
+	ConfFilePermission os.FileMode = 0644
+	// BridgeNet specifies bridge type network
+	BridgeNet = "bridge"
+	// DefaultIpamForBridge specifies default ipam type for bridge
+	DefaultIpamForBridge = "host-local"
+	// DefaultSubnetForBridge specifies default subnet for bridge
+	DefaultSubnetForBridge = "10.10.0.1/16"
 )
 
 // PopulateCNIArgs wraps skel.CmdArgs into Genie's native CNIArgs format.
@@ -216,7 +226,7 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 	tmpMultiIPPreferences, err := json.Marshal(&multiIPPreferences)
 
 	if err != nil {
-		return multiIPPrefAnnot,err
+		return multiIPPrefAnnot, err
 	}
 
 	// Get pod defition to update it in next steps
@@ -229,7 +239,7 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 	fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[MultiIPPreferencesAnnotation] after = %v\n", pod.Annotations[MultiIPPreferencesAnnotation])
 	pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
 	if err != nil {
-		return multiIPPrefAnnot,fmt.Errorf("CNI Genie Error updating pod = %s", err)
+		return multiIPPrefAnnot, fmt.Errorf("CNI Genie Error updating pod = %s", err)
 	}
 	return string(tmpMultiIPPreferences), nil
 }
@@ -407,6 +417,76 @@ func ParseCNIConfFromFile(filename string) (utils.NetConf, error) {
 	return conf, nil
 }
 
+// checkPluginBinary checks for existence of plugin binary file
+func checkPluginBinary(cniName string) error {
+	binaries, err := ioutil.ReadDir(DefaultPluginDir)
+	if err != nil {
+		return fmt.Errorf("CNI Genie Error while checking binary file for plugin %s: %v", cniName, err)
+	}
+
+	for _, bin := range binaries {
+		if true == strings.Contains(bin.Name(), cniName) {
+			return nil
+		}
+	}
+	return fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge)", cniName)
+}
+
+// placeConfFile creates a conf file in the specified directory path
+func placeConfFile(obj interface{}, cniName string) (string, []byte, error) {
+	dataBytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return "", nil, fmt.Errorf("CNI Genie Error while marshalling configuration object for plugin %s: %v", cniName, err)
+	}
+
+	confFile := fmt.Sprintf(DefaultNetDir+"/"+"10-%s"+".conf", cniName)
+	err = ioutil.WriteFile(confFile, dataBytes, ConfFilePermission)
+	if err != nil {
+		return "", nil, fmt.Errorf("CNI Genie Error while writing default conf file for plugin %s: %v", cniName, err)
+	}
+	return confFile, dataBytes, nil
+}
+
+// createConfIfBinaryExists checks for the binary file for a cni type and creates the conf if binary exists
+func createConfIfBinaryExists(cniName string) ([]byte, error) {
+	// Check for the corresponding binary file.
+	// If binary is not present, then do not create the conf file
+	if err := checkPluginBinary(cniName); err != nil {
+		return nil, err
+	}
+
+	var pluginObj interface{}
+	switch cniName {
+	case BridgeNet:
+		pluginObj = struct {
+			Name string      `json:"name"`
+			Type string      `json:"type"`
+			Ipam interface{} `json:"ipam"`
+		}{
+			Name: "mybridgenet",
+			Type: BridgeNet,
+			Ipam: struct {
+				Type   string `json:"type"`
+				Subnet string `json:"subnet"`
+			}{
+				Type:   DefaultIpamForBridge,
+				Subnet: DefaultSubnetForBridge,
+			},
+		}
+		break
+	default:
+		return nil, fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge)", cniName)
+	}
+
+	confFile, confBytes, err := placeConfFile(&pluginObj, cniName)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(os.Stderr, "CNI Genie Placed default conf file (%s) for cni type %s.\n", confFile, cniName)
+
+	return confBytes, nil
+}
+
 // addNetwork is a core function that delegates call to pull IP from a Container Networking Solution (CNI Plugin)
 func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
 	var result types.Result
@@ -419,40 +499,53 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 
 	files, err := libcni.ConfFiles(DefaultNetDir, []string{".conf"})
 	fmt.Fprintf(os.Stderr, "CNI Genie files =%v\n", files)
-	switch {
-	case err != nil:
+	if err != nil {
 		return nil, err
-	case len(files) == 0:
-		return nil, fmt.Errorf("No networks found in %s", DefaultNetDir)
 	}
+
 	sort.Strings(files)
+	var cniType string
+	confFileFound := false
 	for _, confFile := range files {
-		confFromFile, err := ParseCNIConfFromFile(confFile)
-		fmt.Fprintf(os.Stderr, "CNI Genie confFromFile =%v\n", confFromFile)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
-			continue
-		}
-		if strings.Contains(confFile, cniName) && cniName != ""{
+		if strings.Contains(confFile, cniName) && cniName != "" {
+			confFileFound = true
+			// Get the configuration info from the file. If the file does not
+			// contain valid conf, then skip it and check for another
+			confFromFile, err := ParseCNIConfFromFile(confFile)
+			fmt.Fprintf(os.Stderr, "CNI Genie confFromFile =%+v\n", confFromFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file %s= %v\n", confFile, err)
+				continue
+			}
 			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
 
-			conf = confFromFile
-			stdinData, _ = json.Marshal(&conf)
-			result, err = ipam.ExecAdd(conf.Type, stdinData)
+			stdinData, err = json.Marshal(&confFromFile)
 			if err != nil {
-				return nil, err
+				fmt.Fprintf(os.Stderr, "CNI Genie Error while marshalling conf from %s: %v. Skipping the file.\n", confFile, err)
+				continue
 			}
-			fmt.Fprintf(os.Stderr, "CNI Genie result = %v\n", result)
+			cniType = confFromFile.Type
 			break
 		}
 	}
 
-	if result != nil {
-		fmt.Fprintf(os.Stderr, "CNI Genie final result = %v\n", result)
-		return result, nil
+	// If corresponding conf file is not present, then check for the
+	// corresponding binary and create a default conf file if binary is present
+	if confFileFound != true {
+		stdinData, err = createConfIfBinaryExists(cniName)
+		if err != nil {
+			return nil, err
+		}
+		cniType = cniName
 	}
 
-	return nil, fmt.Errorf("CNI Genie doesn't support passed cniName [%v]. Only supported are (Romana, weave, canal, calico, flannel) \n", cniName)
+	result, err = ipam.ExecAdd(cniType, stdinData)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(os.Stderr, "CNI Genie final result = %v\n", result)
+
+	return result, nil
 }
 
 // deleteNetwork is a core function that delegates call to release IP from a Container Networking Solution (CNI Plugin)
@@ -479,7 +572,7 @@ func deleteNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils
 			fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
 			continue
 		}
-		if strings.Contains(confFile, cniName) && cniName != ""{
+		if strings.Contains(confFile, cniName) && cniName != "" {
 			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
 
 			conf = confFromFile
