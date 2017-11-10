@@ -8,6 +8,7 @@
 * Kubernetes cluster running with CNI enabled
   * One easy way to bring up a cluster is to use [kubeadm](https://kubernetes.io/docs/getting-started-guides/kubeadm/): 
       * We tested on Kubernetes 1.5, 1.6, 1.7, 1.8
+      
       Till 1.7 version:
       ```
       $ kubeadm init --use-kubernetes-version=v1.7.0 --pod-network-cidr=10.244.0.0/16
@@ -36,6 +37,7 @@
 ### Installing genie
 
 We install genie as a Docker Container on every node
+
 Till Kubernetes 1.7 version: 
 ```
 $ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.5/genie.yaml
@@ -86,7 +88,7 @@ $ tail -f /var/log/syslog | grep 'CNI'
 
 * Note: one a single node cluster, after your Kubernetes master is initialized successfully, make sure you are able to schedule pods on the master by running:
 ```
-$ kubectl taint nodes --all dedicated-
+$ kubectl taint nodes --all node-role.kubernetes.io/master-
 ```
-* Note: most plugins use differenet installation files for Kuberenetes 1.5, 1.6 & 1.7. Make sure you use the right one!
+* Note: most plugins use differenet installation files for Kuberenetes 1.5, 1.6, 1.7 & 1.8. Make sure you use the right one!
 
