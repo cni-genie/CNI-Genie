@@ -7,9 +7,19 @@
 * Docker installed
 * Kubernetes cluster running with CNI enabled
   * One easy way to bring up a cluster is to use [kubeadm](https://kubernetes.io/docs/getting-started-guides/kubeadm/): 
-      * We tested on Kubernetes 1.5, 1.6, 1.7
+      * We tested on Kubernetes 1.5, 1.6, 1.7, 1.8
+      Till 1.7 version:
       ```
       $ kubeadm init --use-kubernetes-version=v1.7.0 --pod-network-cidr=10.244.0.0/16
+      ```
+
+      For 1.8 version:
+      ```
+      $ kubeadm init --pod-network-cidr=10.244.0.0/16
+      ```
+
+      Next steps:
+      ```
       $ mkdir -p $HOME/.kube
       $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -26,10 +36,15 @@
 ### Installing genie
 
 We install genie as a Docker Container on every node
+Till Kubernetes 1.7 version: 
 ```
 $ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.5/genie.yaml
 ```
 
+For Kubernetes 1.8 version:
+```
+$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.8/genie.yaml
+```
 ### Making changes to and build from source
 
 Note that you should install genie first before making changes to the source. This ensures genie conf file is generated successfully.
