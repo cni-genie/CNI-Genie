@@ -25,10 +25,19 @@
       $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
       ```
-      * To schedule pods on the master, e.g. for a single-machine Kubernetes cluster, run:
+      * To schedule pods on the master, e.g. for a single-machine Kubernetes cluster,
+      
+      Till 1.7 version, run:
       ```
       $ kubectl taint nodes --all dedicated-
       ```
+
+      For 1.8 version, run:
+      ```
+      $ kubectl taint nodes --all node-role.kubernetes.io/master-
+      ```
+
+      
 * One (or more) CNI plugin(s) installed, e.g., Canal, Weave, Flannel
   * Use this [link](https://github.com/projectcalico/canal/tree/master/k8s-install) to install Canal       
   * Use this [link](https://www.weave.works/docs/net/latest/kube-addon/) to install Weave      
