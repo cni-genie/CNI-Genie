@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/Huawei-PaaS/CNI-Genie/plugins"
 	"github.com/containernetworking/cni/libcni"
 	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
@@ -48,12 +49,6 @@ const (
 	DefaultPluginDir = "/opt/cni/bin"
 	// ConfFilePermission specifies the default permission for conf file
 	ConfFilePermission os.FileMode = 0644
-	// BridgeNet specifies bridge type network
-	BridgeNet = "bridge"
-	// DefaultIpamForBridge specifies default ipam type for bridge
-	DefaultIpamForBridge = "host-local"
-	// DefaultSubnetForBridge specifies default subnet for bridge
-	DefaultSubnetForBridge = "10.10.0.1/16"
 )
 
 // PopulateCNIArgs wraps skel.CmdArgs into Genie's native CNIArgs format.
@@ -457,22 +452,8 @@ func createConfIfBinaryExists(cniName string) ([]byte, error) {
 
 	var pluginObj interface{}
 	switch cniName {
-	case BridgeNet:
-		pluginObj = struct {
-			Name string      `json:"name"`
-			Type string      `json:"type"`
-			Ipam interface{} `json:"ipam"`
-		}{
-			Name: "mybridgenet",
-			Type: BridgeNet,
-			Ipam: struct {
-				Type   string `json:"type"`
-				Subnet string `json:"subnet"`
-			}{
-				Type:   DefaultIpamForBridge,
-				Subnet: DefaultSubnetForBridge,
-			},
-		}
+	case plugins.BridgeNet:
+		pluginObj = plugins.GetBridgeConfig()
 		break
 	default:
 		return nil, fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge)", cniName)
