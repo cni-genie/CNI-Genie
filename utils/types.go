@@ -85,6 +85,8 @@ type NetConf struct {
 	CalicoSubnet   string                 `json:"calico_subnet"`
 	CanalSubnet    string                 `json:"canal_subnet"`
 	WeaveSubnet    string                 `json:"weave_subnet"`
+	Master         string                 `json:"master"`
+	Mode           string                 `json:"mode"`
 
 	Bridge           string `json:"bridge,omitempty"`
 	IsDefaultGateway bool   `json:"isDefaultGateway,omitempty"`
