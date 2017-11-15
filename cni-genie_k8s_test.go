@@ -39,14 +39,6 @@ var _ = Describe("CNIGenie", func() {
 	Describe("Add calico networking for Pod", func() {
 		glog.Info("Inside Check for adding Calico networking")
 		Context("using cni-genie for configuring calico CNI", func() {
-			config, err := clientcmd.DefaultClientConfig.ClientConfig()
-			if err != nil {
-				panic(err)
-			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err)
-			}
 			name := fmt.Sprintf("nginx-calico-%d", rand.Uint32())
 			interfaceName := "eth0"
 			glog.Info(interfaceName)
@@ -55,7 +47,7 @@ var _ = Describe("CNIGenie", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "calico"
 				//Create a K8s Pod with calico cni
-				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -95,14 +87,6 @@ var _ = Describe("CNIGenie", func() {
 	Describe("Add romana networking for Pod", func() {
 		glog.Info("Inside Check for adding romana networking")
 		Context("using cni-genie for configuring romana CNI", func() {
-			config, err := clientcmd.DefaultClientConfig.ClientConfig()
-			if err != nil {
-				panic(err)
-			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err)
-			}
 			name := fmt.Sprintf("nginx-romana-%d", rand.Uint32())
 			interfaceName := "eth0"
 			glog.Info(interfaceName)
@@ -111,7 +95,7 @@ var _ = Describe("CNIGenie", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "romana"
 				//Create a K8s Pod with calico cni
-				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -151,14 +135,6 @@ var _ = Describe("CNIGenie", func() {
 	Describe("Add weave networking for Pod", func() {
 		glog.Info("Inside Check for adding weave networking")
 		Context("using cni-genie for configuring weave CNI", func() {
-			config, err := clientcmd.DefaultClientConfig.ClientConfig()
-			if err != nil {
-				panic(err)
-			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err)
-			}
 			name := fmt.Sprintf("nginx-weave-%d", rand.Uint32())
 			interfaceName := "eth0"
 			glog.Info(interfaceName)
@@ -166,7 +142,7 @@ var _ = Describe("CNIGenie", func() {
 			It("should succeed weave networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "weave"
-				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -206,14 +182,6 @@ var _ = Describe("CNIGenie", func() {
 	Describe("Add multi-ip networking for Pod", func() {
 		glog.Info("Inside Check for adding multi-ip networking")
 		Context("using cni-genie for configuring multi-ip CNI", func() {
-			config, err := clientcmd.DefaultClientConfig.ClientConfig()
-			if err != nil {
-				panic(err)
-			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err)
-			}
 			name := fmt.Sprintf("nginx-multiip-%d", rand.Uint32())
 			interfaceName := "eth0"
 			glog.Info(interfaceName)
@@ -221,7 +189,7 @@ var _ = Describe("CNIGenie", func() {
 			It("should succeed multi-ip networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "calico,weave"
-				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -261,14 +229,6 @@ var _ = Describe("CNIGenie", func() {
 	Describe("Add nocni networking for Pod", func() {
 		glog.Info("Inside Check for adding nocni networking")
 		Context("using cni-genie for configuring nocni CNI", func() {
-			config, err := clientcmd.DefaultClientConfig.ClientConfig()
-			if err != nil {
-				panic(err)
-			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err)
-			}
 			name := fmt.Sprintf("nginx-nocni-%d", rand.Uint32())
 			interfaceName := "eth0"
 			glog.Info(interfaceName)
@@ -276,7 +236,7 @@ var _ = Describe("CNIGenie", func() {
 			It("should succeed nocni networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = " "
-				_, err = clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: v1.ObjectMeta{
 						Name:        name,
 						Annotations: annots,
@@ -311,7 +271,96 @@ var _ = Describe("CNIGenie", func() {
 				Expect("Success").To(Equal("Success"))
 			})
 		})
+	})
+	Describe("Add bridge networking for Pod", func() {
+		glog.Info("Inside Check for adding bridge networking")
+		Context("using cni-genie for configuring bridge CNI", func() {
+			name := fmt.Sprintf("nginx-bridge-%d", rand.Uint32())
 
+			It("should succeed bridge networking for pod", func() {
+				annots := make(map[string]string)
+				annots["cni"] = "bridge"
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+					ObjectMeta: v1.ObjectMeta{
+						Name:        name,
+						Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the bridge pod to have running status")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				glog.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the bridge pod now...")
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for bridge pod deletion")
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
+	})
+	Describe("Add multi-ip (weave, bridge) networking for Pod", func() {
+		glog.Info("Inside Check for adding multi-ip (weave, bridge) networking")
+		Context("using cni-genie for configuring multi-ip (weave, bridge) CNI", func() {
+			name := fmt.Sprintf("nginx-multiip-weave-bridge-%d", rand.Uint32())
+			interfaceName := "eth0"
+			glog.Info(interfaceName)
+
+			It("should succeed multi-ip (weave, bridge) networking for pod", func() {
+				annots := make(map[string]string)
+				annots["cni"] = "weave,bridge"
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+					ObjectMeta: v1.ObjectMeta{
+						Name:        name,
+						Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the multi-ip (weave, bridge) pod to have running status")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				glog.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the multi-ip (weave, bridge) pod now...")
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for multi-ip (weave, bridge) pod deletion")
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
 	})
 })
 var _ = BeforeSuite(func() {

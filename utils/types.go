@@ -86,6 +86,13 @@ type NetConf struct {
 	CanalSubnet    string                 `json:"canal_subnet"`
 	WeaveSubnet    string                 `json:"weave_subnet"`
 
+	Bridge           string `json:"bridge,omitempty"`
+	IsDefaultGateway bool   `json:"isDefaultGateway,omitempty"`
+	ForceAddress     bool   `json:"forceAddress,omitempty"`
+	IpMasq           bool   `json:"ipMasq,omitempty"`
+	HairpinMode      bool   `json:"hairpinMode,omitempty"`
+	IsGateway        bool   `json:"isGateway,omitempty"`
+
 	//added for romana
 	RomanaRoot       string `json:"romana_root"`
 	SegmentLabelName string `json:"segment_label_name"`
