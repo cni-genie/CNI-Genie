@@ -61,12 +61,16 @@ type NetConf struct {
 	Type       string `json:"type"`
 	IPAM       struct {
 		Name       string
-		Type       string   `json:"type"`
-		Subnet     string   `json:"subnet"`
-		AssignIpv4 *string  `json:"assign_ipv4"`
-		AssignIpv6 *string  `json:"assign_ipv6"`
-		IPv4Pools  []string `json:"ipv4_pools,omitempty"`
-		IPv6Pools  []string `json:"ipv6_pools,omitempty"`
+		Type       string        `json:"type"`
+		Subnet     string        `json:"subnet"`
+		RangeStart string        `json:"rangeStart"`
+		RangeEnd   string        `json:"rangeEnd"`
+		Gateway    net.IP        `json:"gateway"`
+		Routes     []types.Route `json:"routes"`
+		AssignIpv4 *string       `json:"assign_ipv4"`
+		AssignIpv6 *string       `json:"assign_ipv6"`
+		IPv4Pools  []string      `json:"ipv4_pools,omitempty"`
+		IPv6Pools  []string      `json:"ipv6_pools,omitempty"`
 	} `json:"ipam,omitempty"`
 	MTU            int                    `json:"mtu"`
 	Hostname       string                 `json:"hostname"`
@@ -96,6 +100,10 @@ type NetConf struct {
 	//added for romana
 	RomanaRoot       string `json:"romana_root"`
 	SegmentLabelName string `json:"segment_label_name"`
+
+	//sriov cni specific
+	IF0              string `json:"if0"`
+	Vlan             int    `json:"vlan"`
 }
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes
