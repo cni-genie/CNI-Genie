@@ -7,17 +7,37 @@
 * Docker installed
 * Kubernetes cluster running with CNI enabled
   * One easy way to bring up a cluster is to use [kubeadm](https://kubernetes.io/docs/getting-started-guides/kubeadm/): 
-      * We tested on Kubernetes 1.5, 1.6, 1.7
+      * We tested on Kubernetes 1.5, 1.6, 1.7, 1.8
+      
+      Till 1.7 version:
       ```
       $ kubeadm init --use-kubernetes-version=v1.7.0 --pod-network-cidr=10.244.0.0/16
+      ```
+
+      For 1.8 version:
+      ```
+      $ kubeadm init --pod-network-cidr=10.244.0.0/16
+      ```
+
+      Next steps:
+      ```
       $ mkdir -p $HOME/.kube
       $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
       ```
-      * To schedule pods on the master, e.g. for a single-machine Kubernetes cluster, run:
+      * To schedule pods on the master, e.g. for a single-machine Kubernetes cluster,
+      
+      Till 1.7 version, run:
       ```
       $ kubectl taint nodes --all dedicated-
       ```
+
+      For 1.8 version, run:
+      ```
+      $ kubectl taint nodes --all node-role.kubernetes.io/master-
+      ```
+
+      
 * One (or more) CNI plugin(s) installed, e.g., Canal, Weave, Flannel
   * Use this [link](https://github.com/projectcalico/canal/tree/master/k8s-install) to install Canal       
   * Use this [link](https://www.weave.works/docs/net/latest/kube-addon/) to install Weave      
@@ -26,10 +46,16 @@
 ### Installing genie
 
 We install genie as a Docker Container on every node
+
+Till Kubernetes 1.7 version: 
 ```
 $ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.5/genie.yaml
 ```
 
+For Kubernetes 1.8 version:
+```
+$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.8/genie.yaml
+```
 ### Making changes to and build from source
 
 Note that you should install genie first before making changes to the source. This ensures genie conf file is generated successfully.
@@ -71,7 +97,7 @@ $ tail -f /var/log/syslog | grep 'CNI'
 
 * Note: one a single node cluster, after your Kubernetes master is initialized successfully, make sure you are able to schedule pods on the master by running:
 ```
-$ kubectl taint nodes --all dedicated-
+$ kubectl taint nodes --all node-role.kubernetes.io/master-
 ```
-* Note: most plugins use differenet installation files for Kuberenetes 1.5, 1.6 & 1.7. Make sure you use the right one!
+* Note: most plugins use differenet installation files for Kuberenetes 1.5, 1.6, 1.7 & 1.8. Make sure you use the right one!
 
