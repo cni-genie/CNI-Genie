@@ -139,7 +139,6 @@ var _ = Describe("CNIGenie", func() {
 			interfaceName := "eth0"
 			glog.Info(interfaceName)
 
-
 			It("should succeed weave networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "weave"
