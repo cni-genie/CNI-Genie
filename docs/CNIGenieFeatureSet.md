@@ -9,7 +9,7 @@
 * Injects multiple IPs to a single container. The container is reachable using any of the [multiple IP Addresses](multiple-ips/README.md)
 
 **Feature 3: CNI-Genie "Smart CNI Plugin Selection"**
-* Intelligence in selecting Container Networking Solution(s) (CNS). [CNI-Genie smartly selects](smart-cni-genie/README.md) one (or more) of the existing CNSs on the host node
+* Intelligence in selecting the CNI plugin. CNI-Genie [watches the KPI of interest and selects](smart-cni-genie/README.md) the CNI plugin, accordingly
 
 ## Future features
 
