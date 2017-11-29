@@ -56,18 +56,10 @@ type CNIArgs struct {
 
 // NetConf stores the common network config for Calico CNI plugin
 type NetConf struct {
-	CNIVersion string `json:"cniVersion"`
-	Name       string `json:"name"`
-	Type       string `json:"type"`
-	IPAM       struct {
-		Name       string
-		Type       string   `json:"type"`
-		Subnet     string   `json:"subnet"`
-		AssignIpv4 *string  `json:"assign_ipv4"`
-		AssignIpv6 *string  `json:"assign_ipv6"`
-		IPv4Pools  []string `json:"ipv4_pools,omitempty"`
-		IPv6Pools  []string `json:"ipv6_pools,omitempty"`
-	} `json:"ipam,omitempty"`
+	CNIVersion     string                 `json:"cniVersion"`
+	Name           string                 `json:"name"`
+	Type           string                 `json:"type"`
+	IPAM           interface{}            `json:"ipam,omitempty"`
 	MTU            int                    `json:"mtu"`
 	Hostname       string                 `json:"hostname"`
 	DatastoreType  string                 `json:"datastore_type"`
@@ -85,6 +77,8 @@ type NetConf struct {
 	CalicoSubnet   string                 `json:"calico_subnet"`
 	CanalSubnet    string                 `json:"canal_subnet"`
 	WeaveSubnet    string                 `json:"weave_subnet"`
+	Master         string                 `json:"master"`
+	Mode           string                 `json:"mode"`
 
 	Bridge           string `json:"bridge,omitempty"`
 	IsDefaultGateway bool   `json:"isDefaultGateway,omitempty"`

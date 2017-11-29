@@ -21,8 +21,8 @@ package genie
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/Huawei-PaaS/CNI-Genie/plugins"
+	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/containernetworking/cni/libcni"
 	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
@@ -424,7 +424,7 @@ func checkPluginBinary(cniName string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge)", cniName)
+	return fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan)", cniName)
 }
 
 // placeConfFile creates a conf file in the specified directory path
@@ -455,8 +455,11 @@ func createConfIfBinaryExists(cniName string) ([]byte, error) {
 	case plugins.BridgeNet:
 		pluginObj = plugins.GetBridgeConfig()
 		break
+	case plugins.Macvlan:
+		pluginObj = plugins.GetMacvlanConfig()
+		break
 	default:
-		return nil, fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge)", cniName)
+		return nil, fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan)", cniName)
 	}
 
 	confFile, confBytes, err := placeConfFile(&pluginObj, cniName)
