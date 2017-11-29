@@ -13,5 +13,13 @@
 
 ## Future features
 
-**Feature 4: CNI-Genie "Network Policy Engine"**
+**Feature 4: CNI-Genie "Network Isolation"**
+* Dedicated 'physical' network for a tenant
+* Isolated 'logical' networks for different tenants on a shared 'physical'network 
+
+**Feature 5: CNI-Genie "Network Policy Engine"**
 * [CNI-Genie network policy engine](network-policy/README.md) allows for network level ACLs 
+
+**Feature 6: CNI-Genie "Real-time Network Switching"**
+* Price minimization: dynamically switching workload to a cheaper network as network prices change
+* Maximizing network utilization: dynamically switching workload to the less congested network at a threshold
