@@ -39,7 +39,7 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 
 
 2. [Multiple NICs per container & per pod](docs/multiple-ips/README.md). The user can select multiple NICs to be added to a container upon creating them. Each NIC can get an IP address from an existing CNI plugin of choice. This makes the container reachable across multiple networks. Some use-cases from [SIG-Network](https://github.com/kubernetes/community/wiki/SIG-Network) are depicted in the figure below
-   ![image](docs/multiple-ips/multi-interface.png)
+   ![image](docs/multiple-ips/multi-interface.PNG)
         
 [Watch multi-NICs per 'container' demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-ips/README.md#demo)
 
@@ -63,7 +63,8 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 6. Real-time switching between different (physical or logical) networks for a given workload. This allows for
     - Price minimization: dynamically switching workload to a cheaper network as network prices change    
     - Maximizing network utilization: dynamically switching workload to the less congested network at a threshold
-    ![image](docs/network-switching.png)
+    
+    ![image](docs/network-switching.PNG)
 
 
 
