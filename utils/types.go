@@ -115,3 +115,11 @@ type IPAddressPreferences struct {
 	Ip        string `json:"ip,omitempty"`
 	Interface string `json:"interface,omitempty"`
 }
+
+//Details of plugin info for user pod
+type PluginInfo struct {
+	PluginName string
+	IfName     string
+	Subnet     string
+	Refer_nic  string
+}
