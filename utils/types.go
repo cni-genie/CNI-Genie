@@ -16,10 +16,11 @@
 package utils
 
 import (
-	"github.com/containernetworking/cni/pkg/types"
-	c "github.com/google/cadvisor/info/v1"
 	"net"
 	"time"
+
+	"github.com/containernetworking/cni/pkg/types"
+	c "github.com/google/cadvisor/info/v1"
 )
 
 type ContainerInfoGenie struct {
@@ -104,6 +105,9 @@ type NetConf struct {
 	//added for romana
 	RomanaRoot       string `json:"romana_root"`
 	SegmentLabelName string `json:"segment_label_name"`
+
+	// CNI-Genie default plugin
+	DefaultPlugin string `json:"default_plugin"`
 }
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes
