@@ -311,7 +311,20 @@ func ParsePodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sAr
 
 	annot, err := getK8sPodAnnotations(client, k8sArgs)
 	if err != nil {
-		return annots, err
+		args := k8sArgs.K8S_ANNOT
+		if len(args) == 0 {
+			fmt.Fprintf(os.Stderr, "CNI Genie no env var and no pod")
+			return annots, err
+		}
+		fmt.Fprintf(os.Stderr, "CNI Genie env  annot val: %s", args)
+		envAnnot := map[string]string{}
+		errEnv := json.Unmarshal([]byte(args), &envAnnot)
+		if errEnv != nil {
+			fmt.Fprintf(os.Stderr, "CNI Genie error getting annotations from pod: `%v` and Error Using annotations from ENV: `%v`\n", err, errEnv)
+			return annots, err
+		}
+		annot = envAnnot
+		fmt.Fprintf(os.Stderr, "CNI Genie error getting annotations from pod: %v. Using annotations from ENV: annot= %v\n", err, annot)
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
 
