@@ -12,7 +12,7 @@ import (
 	"math/rand"
 	"os"
 	"time"
-
+	"os/exec"
 	"flag"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/rest"
@@ -424,6 +424,10 @@ var _ = BeforeSuite(func() {
 		panic(err)
 	}
 	createNamespace(clientset)
+	// Start all the required plugins through shell script
+	cmd := exec.Command("./plugins_install.sh", "-all")
+	_, err = cmd.Output()
+
 })
 
 var _ = AfterSuite(func() {
@@ -434,6 +438,10 @@ var _ = AfterSuite(func() {
 	if err != nil {
 		panic(err)
 	}
+	// Delete all the installed plugins after usage
+	cmd := exec.Command("./plugins_install.sh", "-deleteall")
+       _, err = cmd.Output()
+
 })
 
 func createNamespace(clientset *kubernetes.Clientset) {
