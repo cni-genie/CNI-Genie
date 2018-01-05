@@ -31,7 +31,6 @@ import (
 	"github.com/Huawei-PaaS/CNI-Genie/plugins"
 	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/containernetworking/cni/libcni"
-	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/golang/glog"
@@ -389,16 +388,35 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	return finalAnnots, nil
 }
 
-func ParseCNIConfFromFile(filename string) (utils.NetConf, error) {
-	conf := utils.NetConf{}
-	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return conf, fmt.Errorf("error reading %s: %s", filename, err)
+func ParseCNIConfFromFile(filename string) (*libcni.NetworkConfigList, error) {
+	var err error
+	var confList *libcni.NetworkConfigList
+
+	if strings.HasSuffix(filename, ".conflist") {
+		confList, err = libcni.ConfListFromFile(filename)
+		if err != nil {
+			return nil, fmt.Errorf("Error loading CNI config list file %s: %v", filename, err)
+		}
+	} else {
+		conf, err := libcni.ConfFromFile(filename)
+		if err != nil {
+			return nil, fmt.Errorf("Error loading CNI config file %s: %v", filename, err)
+		}
+		// Ensure the config has a "type" so we know what plugin to run.
+		// Also catches the case where somebody put a conflist into a conf file.
+		if conf.Network.Type == "" {
+			return nil, fmt.Errorf("Error loading CNI config file %s: no 'type'; perhaps this is a .conflist?", filename)
+		}
+
+		confList, err = libcni.ConfListFromConf(conf)
+		if err != nil {
+			return nil, fmt.Errorf("Error converting CNI config file %s to list: %v", filename, err)
+		}
 	}
-	if err := json.Unmarshal(bytes, &conf); err != nil {
-		return conf, fmt.Errorf("failed to load netconf: %v", err)
+	if len(confList.Plugins) == 0 {
+		return nil, fmt.Errorf("CNI config list %s has no networks", filename)
 	}
-	return conf, nil
+	return confList, nil
 }
 
 // checkPluginBinary checks for existence of plugin binary file
@@ -432,7 +450,7 @@ func placeConfFile(obj interface{}, cniName string) (string, []byte, error) {
 }
 
 // createConfIfBinaryExists checks for the binary file for a cni type and creates the conf if binary exists
-func createConfIfBinaryExists(cniName string) ([]byte, error) {
+func createConfIfBinaryExists(cniName string) (*libcni.NetworkConfigList, error) {
 	// Check for the corresponding binary file.
 	// If binary is not present, then do not create the conf file
 	if err := checkPluginBinary(cniName); err != nil {
@@ -455,22 +473,28 @@ func createConfIfBinaryExists(cniName string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	netConf, err := libcni.ConfFromBytes(confBytes)
+	if err != nil {
+		return nil, err
+	}
+	confList, err := libcni.ConfListFromConf(netConf)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Fprintf(os.Stderr, "CNI Genie Placed default conf file (%s) for cni type %s.\n", confFile, cniName)
 
-	return confBytes, nil
+	return confList, nil
 }
 
 // addNetwork is a core function that delegates call to pull IP from a Container Networking Solution (CNI Plugin)
 func addNetwork(intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
 	var result types.Result
-	var stdinData []byte
 	var err error
-	if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(intfId)) != nil {
-		fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-	}
 	fmt.Fprintf(os.Stderr, "CNI Genie cniName=%v\n", cniName)
 
-	files, err := libcni.ConfFiles(DefaultNetDir, []string{".conf"})
+	cniConfig := libcni.CNIConfig{Path: []string{DefaultPluginDir}}
+
+	files, err := libcni.ConfFiles(DefaultNetDir, []string{".conf", ".conflist"})
 	fmt.Fprintf(os.Stderr, "CNI Genie files =%v\n", files)
 	if err != nil {
 		return nil, err
@@ -478,41 +502,41 @@ func addNetwork(intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result
 
 	sort.Strings(files)
 	var cniType string
-	confFileFound := false
+	var netConfigList *libcni.NetworkConfigList
 	for _, confFile := range files {
 		if strings.Contains(confFile, cniName) && cniName != "" {
-			confFileFound = true
 			// Get the configuration info from the file. If the file does not
 			// contain valid conf, then skip it and check for another
 			confFromFile, err := ParseCNIConfFromFile(confFile)
-			fmt.Fprintf(os.Stderr, "CNI Genie confFromFile =%+v\n", confFromFile)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file %s= %v\n", confFile, err)
 				continue
 			}
-			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
-
-			stdinData, err = json.Marshal(&confFromFile)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie Error while marshalling conf from %s: %v. Skipping the file.\n", confFile, err)
-				continue
-			}
-			cniType = confFromFile.Type
+			cniType = confFromFile.Plugins[0].Network.Type
+			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%s\n", cniType)
+			netConfigList = confFromFile
 			break
 		}
 	}
 
 	// If corresponding conf file is not present, then check for the
 	// corresponding binary and create a default conf file if binary is present
-	if confFileFound != true {
-		stdinData, err = createConfIfBinaryExists(cniName)
+	if netConfigList == nil {
+		netConfigList, err = createConfIfBinaryExists(cniName)
 		if err != nil {
 			return nil, err
 		}
 		cniType = cniName
 	}
 
-	result, err = ipam.ExecAdd(cniType, stdinData)
+	fmt.Fprintf(os.Stderr, "CNI Genie cni type= %s\n", cniType)
+	rtConf, err := runtimeConf(cniArgs, "eth"+strconv.Itoa(intfId))
+	if err != nil {
+		return nil, fmt.Errorf("CNI Genie couldn't convert cniArgs to RuntimeConf: %v\n", err)
+	}
+	fmt.Fprintf(os.Stderr, "CNI Genie runtime configuration = %+v\n", rtConf)
+
+	result, err = cniConfig.AddNetworkList(netConfigList, rtConf)
 	if err != nil {
 		return nil, err
 	}
@@ -523,12 +547,9 @@ func addNetwork(intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result
 
 // deleteNetwork is a core function that delegates call to release IP from a Container Networking Solution (CNI Plugin)
 func deleteNetwork(intfId int, cniName string, cniArgs utils.CNIArgs) error {
-	var stdinData []byte
-	var conf utils.NetConf
+	var conf *libcni.NetworkConfigList
 
-	if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(intfId)) != nil {
-		fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-	}
+	cniConfig := libcni.CNIConfig{Path: []string{DefaultPluginDir}}
 
 	files, err := libcni.ConfFiles(DefaultNetDir, []string{".conf"})
 	fmt.Fprintf(os.Stderr, "CNI Genie files =%v\n", files)
@@ -540,20 +561,23 @@ func deleteNetwork(intfId int, cniName string, cniArgs utils.CNIArgs) error {
 	}
 	sort.Strings(files)
 	for _, confFile := range files {
-		confFromFile, err := ParseCNIConfFromFile(confFile)
-		fmt.Fprintf(os.Stderr, "CNI Genie confFromFile =%v\n", confFromFile)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
-			continue
-		}
 		if strings.Contains(confFile, cniName) && cniName != "" {
-			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
+			confFromFile, err := ParseCNIConfFromFile(confFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
+				continue
+			}
+			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Plugins[0].Network.Type)
 
 			conf = confFromFile
-			stdinData, _ = json.Marshal(&conf)
-			ipamErr := ipam.ExecDel(conf.Type, stdinData)
-			if ipamErr != nil {
-				return ipamErr
+			fmt.Fprintf(os.Stderr, "CNI Genie cni type= %s\n", conf.Plugins[0].Network.Type)
+			rtConf, err := runtimeConf(cniArgs, "eth"+strconv.Itoa(intfId))
+			if err != nil {
+				return fmt.Errorf("CNI Genie couldn't convert cniArgs to RuntimeConf: %v\n", err)
+			}
+			err = cniConfig.DelNetworkList(conf, rtConf)
+			if err != nil {
+				return err
 			}
 			break
 		}
@@ -592,4 +616,28 @@ func getK8sPodAnnotations(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) (
 	}
 
 	return pod.Annotations, nil
+}
+
+func runtimeConf(cniArgs utils.CNIArgs, iface string) (*libcni.RuntimeConf, error) {
+	k8sArgs, err := loadArgs(cniArgs)
+	if err != nil {
+		return nil, err
+	}
+	var ignoreUnknown string
+	if k8sArgs.IgnoreUnknown {
+		ignoreUnknown = "1"
+	} else {
+		ignoreUnknown = "0"
+	}
+
+	return &libcni.RuntimeConf{
+		ContainerID: cniArgs.ContainerID,
+		NetNS:       cniArgs.Netns,
+		IfName:      iface,
+		Args: [][2]string{
+			{"IgnoreUnknown", ignoreUnknown},
+			{"K8S_POD_NAMESPACE", string(k8sArgs.K8S_POD_NAMESPACE)},
+			{"K8S_POD_NAME", string(k8sArgs.K8S_POD_NAME)},
+			{"K8S_POD_INFRA_CONTAINER_ID", string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID)},
+		}}, nil
 }
