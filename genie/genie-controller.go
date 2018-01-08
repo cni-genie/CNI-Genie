@@ -497,7 +497,6 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 	confFileFound := false
 	for _, confFile := range files {
 		if strings.Contains(confFile, cniName) && cniName != "" {
-			confFileFound = true
 			// Get the configuration info from the file. If the file does not
 			// contain valid conf, then skip it and check for another
 			confFromFile, err := ParseCNIConfFromFile(confFile)
@@ -508,12 +507,14 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 			}
 			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%v\n", confFromFile.Type)
 
-			stdinData, err = json.Marshal(&confFromFile)
+			// for stdinData use conf as is, without parsing. It may contain some extra keys
+			stdinData, err = ioutil.ReadFile(confFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie Error while marshalling conf from %s: %v. Skipping the file.\n", confFile, err)
+				fmt.Fprintf(os.Stderr, "CNI Genie Error while reading conf from %s: %v. Skipping the file.\n", confFile, err)
 				continue
 			}
 			cniType = confFromFile.Type
+			confFileFound = true
 			break
 		}
 	}
