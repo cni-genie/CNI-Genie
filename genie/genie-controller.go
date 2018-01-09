@@ -34,6 +34,7 @@ import (
 	"github.com/containernetworking/cni/pkg/ipam"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
+	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
@@ -213,12 +214,14 @@ func UpdatePodDefinition(intfId int, result types.Result, multiIPPrefAnnot strin
 		fmt.Errorf("CNI Genie Error parsing MultiIPPreferencesAnnotation = %s\n", err)
 	}
 
+	currResult, err := current.NewResultFromResult(result)
+	if err != nil {
+		return multiIPPrefAnnot, fmt.Errorf("CNI Genie Error when converting result to current version = %s", err)
+	}
+
 	multiIPPreferences.MultiEntry = multiIPPreferences.MultiEntry + 1
-	//TODO (Kaveh/Karun): Need some clean up here
 	multiIPPreferences.Ips["ip"+strconv.Itoa(intfId+1)] =
-		utils.IPAddressPreferences{
-			strings.Split((strings.Split(result.String(), "IP4:{IP:{IP:")[1]),
-				" Mask")[0], "eth" + strconv.Itoa(intfId)}
+		utils.IPAddressPreferences{currResult.IPs[0].Address.IP.String(), "eth" + strconv.Itoa(intfId)}
 
 	tmpMultiIPPreferences, err := json.Marshal(&multiIPPreferences)
 
