@@ -119,16 +119,8 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 
 	var newErr error
 	for i, ele := range annots {
-		// in case of multi network or multi-ip-per-pod
-		// we should always reinitalize the conf to
-		// original value that came from StdinData
-		conf, err = ParseCNIConf(cniArgs.StdinData)
-		if err != nil {
-			newErr = err
-		}
-
 		// fetches an IP from corresponding CNS IPAM and returns result object
-		result, err = addNetwork(conf, i, ele, cniArgs)
+		result, err = addNetwork(i, ele, cniArgs)
 		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork err *** %v\n", err)
 		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork result***  %v\n", result)
 		if err != nil {
@@ -176,16 +168,8 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 
 	var newErr error
 	for i, ele := range annots {
-		// in case of multi network or multi-ip-per-pod
-		// we should always reinitalize the conf to
-		// original value that came from StdinData
-		conf, err = ParseCNIConf(cniArgs.StdinData)
-		if err != nil {
-			newErr = err
-		}
-
 		// releases an IP from corresponding CNS IPAM and returns error if any exception
-		err = deleteNetwork(conf, i, ele, cniArgs)
+		err = deleteNetwork(i, ele, cniArgs)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie Error deleteNetwork %v", err)
 			newErr = err
@@ -480,7 +464,7 @@ func createConfIfBinaryExists(cniName string) ([]byte, error) {
 }
 
 // addNetwork is a core function that delegates call to pull IP from a Container Networking Solution (CNI Plugin)
-func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
+func addNetwork(intfId int, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
 	var result types.Result
 	var stdinData []byte
 	var err error
@@ -541,8 +525,9 @@ func addNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CN
 }
 
 // deleteNetwork is a core function that delegates call to release IP from a Container Networking Solution (CNI Plugin)
-func deleteNetwork(conf utils.NetConf, intfId int, cniName string, cniArgs utils.CNIArgs) error {
+func deleteNetwork(intfId int, cniName string, cniArgs utils.CNIArgs) error {
 	var stdinData []byte
+	var conf utils.NetConf
 
 	if os.Setenv("CNI_IFNAME", "eth"+strconv.Itoa(intfId)) != nil {
 		fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
