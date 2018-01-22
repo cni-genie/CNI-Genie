@@ -406,6 +406,51 @@ var _ = Describe("CNIGenie", func() {
 			})
 		})
 	})
+	Describe(" Check for multi ip preferences annotation", func() {
+		glog.Info("Inside Check for multi ip preferences annotation")
+		Context("using cni genie to get multiple Ip and update in annotation", func() {
+			name := fmt.Sprintf("nginx-multiip-pref-%d", rand.Uint32())
+
+			It("should succeed multi ip preference for pod", func() {
+				annots := make(map[string]string)
+				annots["cni"] = "weave,flannel"
+				annots["multi-ip-preferences"] = `{"multi_entry": 0,"ips": {"": {"ip": "","interface": ""}}}`
+				_, err := clientset.Pods(TEST_NAMESPACE).Create(&v1.Pod{
+					ObjectMeta: v1.ObjectMeta{
+						Name:        name,
+						Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the pod to have running status")
+				By("Waiting 20 seconds")
+				time.Sleep(time.Duration(20 * time.Second))
+				pod, err := clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				glog.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the pod now...")
+				err = clientset.Pods(TEST_NAMESPACE).Delete(name, &v1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for macvlan pod deletion")
+				_, err = clientset.Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
+	})	
 })
 var _ = BeforeSuite(func() {
 	var config *rest.Config
