@@ -434,7 +434,7 @@ func checkPluginBinary(cniName string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan)", cniName)
+	return fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan, sriov)", cniName)
 }
 
 // placeConfFile creates a conf file in the specified directory path
@@ -468,8 +468,11 @@ func createConfIfBinaryExists(cniName string) (*libcni.NetworkConfigList, error)
 	case plugins.Macvlan:
 		pluginObj = plugins.GetMacvlanConfig()
 		break
+	case plugins.SriovNet:
+		pluginObj = plugins.GetSriovConfig()
+		break
 	default:
-		return nil, fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan)", cniName)
+		return nil, fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan, sriov)", cniName)
 	}
 
 	confFile, confBytes, err := placeConfFile(&pluginObj, cniName)
