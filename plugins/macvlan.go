@@ -13,6 +13,13 @@
 
 package plugins
 
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+)
+
 const (
 	// Macvlan specifies macvlan network
 	Macvlan = "macvlan"
@@ -25,6 +32,13 @@ const (
 )
 
 func GetMacvlanConfig() interface{} {
+	master := DefaultMasterForMacvlan
+	if nic, err := GetDefaultNic(); err == nil && nic != "" {
+		master = nic
+	} else {
+		fmt.Fprintf(os.Stderr, "CNI Genie Could not get default nic for the host; [error: %v]. Using %s as master instead.", err, DefaultMasterForMacvlan)
+	}
+
 	macvlanObj := struct {
 		Name   string      `json:"name"`
 		Type   string      `json:"type"`
@@ -33,7 +47,7 @@ func GetMacvlanConfig() interface{} {
 	}{
 		Name:   "macvlannet",
 		Type:   Macvlan,
-		Master: DefaultMasterForMacvlan,
+		Master: master,
 		Ipam: struct {
 			Type   string `json:"type"`
 			Subnet string `json:"subnet"`
@@ -44,4 +58,16 @@ func GetMacvlanConfig() interface{} {
 	}
 
 	return macvlanObj
+}
+
+func GetDefaultNic() (string, error) {
+	cmd := `route | grep '^default' | grep -o '[^ ]*$'`
+	output, err := exec.Command("sh", "-c", cmd).Output()
+	if err != nil {
+		return "", err
+	}
+
+	nic := strings.TrimRight(fmt.Sprintf("%s", output), "\n")
+
+	return nic, nil
 }
