@@ -18,7 +18,6 @@ package utils
 import (
 	"github.com/containernetworking/cni/pkg/types"
 	c "github.com/google/cadvisor/info/v1"
-	v1 "github.com/projectcalico/cni-plugin/utils"
 	"net"
 	"time"
 )
@@ -54,6 +53,22 @@ type CNIArgs struct {
 	StdinData   []byte
 }
 
+// PolicyConfig is a struct to hold policy config
+type PolicyConfig struct {
+	PolicyType              string `json:"type"`
+	K8sAPIRoot              string `json:"k8s_api_root"`
+	K8sAuthToken            string `json:"k8s_auth_token"`
+	K8sClientCertificate    string `json:"k8s_client_certificate"`
+	K8sClientKey            string `json:"k8s_client_key"`
+	K8sCertificateAuthority string `json:"k8s_certificate_authority"`
+}
+
+// Kubernetes a K8s specific struct to hold config
+type KubernetesConfig struct {
+	K8sAPIRoot string `json:"k8s_api_root"`
+	Kubeconfig string `json:"kubeconfig"`
+}
+
 // NetConf stores the common network config for Calico CNI plugin
 type NetConf struct {
 	CNIVersion     string                 `json:"cniVersion"`
@@ -66,9 +81,8 @@ type NetConf struct {
 	EtcdAuthority  string                 `json:"etcd_authority"`
 	EtcdEndpoints  string                 `json:"etcd_endpoints"`
 	LogLevel       string                 `json:"log_level"`
-	Policy         v1.Policy              `json:"policy"`
-	Kubernetes     v1.Kubernetes          `json:"kubernetes"`
-	Args           v1.Args                `json:"args"`
+	Policy         PolicyConfig           `json:"policy"`
+	Kubernetes     KubernetesConfig       `json:"kubernetes"`
 	EtcdScheme     string                 `json:"etcd_scheme"`
 	EtcdKeyFile    string                 `json:"etcd_key_file"`
 	EtcdCertFile   string                 `json:"etcd_cert_file"`

@@ -1,9 +1,8 @@
 package main_test
 
 import (
-	"fmt"
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo"
-	"github.com/projectcalico/cni-plugin/utils"
 )
 
 func init() {
@@ -11,10 +10,8 @@ func init() {
 }
 
 var _ = Describe("CNIGenie", func() {
-	utils.ConfigureLogging("info")
-	fmt.Println("Inside CNIGenie mesos tests")
+	glog.Info("Inside CNIGenie mesos tests")
 	Describe("Run Genie for mesos", func() {
-		logger := utils.CreateContextLogger("genie_mesos_tests")
-		logger.Info("Inside Run Genie for mesos...")
+		glog.Info("Inside Run Genie for mesos...")
 	})
 })
