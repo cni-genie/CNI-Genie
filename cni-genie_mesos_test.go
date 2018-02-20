@@ -1,8 +1,8 @@
 package main_test
 
 import (
-	. "github.com/onsi/ginkgo"
 	"github.com/golang/glog"
+	. "github.com/onsi/ginkgo"
 )
 
 func init() {
