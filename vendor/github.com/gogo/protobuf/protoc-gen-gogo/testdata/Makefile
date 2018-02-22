@@ -38,12 +38,9 @@ test:	regenerate testbuild
 #	./extension_test
 #	@echo PASS
 
-my_test/test.pb.go: my_test/test.proto
-	protoc --gogo_out=Mmulti/multi1.proto=github.com/gogo/protobuf/protoc-gen-gogo/testdata/multi:. $<
-
-regenerate: my_test/test.pb.go
+regenerate:
 	go install github.com/gogo/protobuf/protoc-min-version
-	protoc-min-version --version="3.0.0" --gogo_out=. ./my_test/test.proto
+	protoc-min-version --version="3.0.0" --gogo_out=Mmulti/multi1.proto=github.com/gogo/protobuf/protoc-gen-gogo/testdata/multi:. ./my_test/test.proto
 
 nuke:	clean
 
@@ -52,7 +49,7 @@ testbuild:	buildprotos
 
 buildprotos:
 	# Invoke protoc once to generate three independent .pb.go files in the same package.
-	protoc --gogo_out=. multi/multi{1,2,3}.proto
+	protoc --gogo_out=. multi/multi1.proto multi/multi2.proto multi/multi3.proto
 
 #extension_test:	extension_test.$O
 #	$(LD) -L. -o $@ $<
