@@ -105,7 +105,7 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 	// parse pod annotations for cns types
 	// eg:
 	//    cni: "canal,weave"
-	annots, err := ParsePodAnnotationsForCNI(kubeClient, k8sArgs)
+	annots, err := ParsePodAnnotationsForCNI(kubeClient, k8sArgs, conf)
 	if err != nil {
 		return nil, fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
 	}
@@ -160,7 +160,7 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 	// parse pod annotations for cns types
 	// eg:
 	//    cni: "canal,weave"
-	annots, err := ParsePodAnnotationsForCNI(kubeClient, k8sArgs)
+	annots, err := ParsePodAnnotationsForCNI(kubeClient, k8sArgs, conf)
 	if err != nil {
 		return fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
 	}
@@ -293,7 +293,7 @@ func GetKubeClient(conf utils.NetConf) (*kubernetes.Clientset, error) {
 //  - get pod definition
 //  - parses annotation section for "cni"
 //  - Returns string array of networking solutions
-func ParsePodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) ([]string, error) {
+func ParsePodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sArgs, conf utils.NetConf) ([]string, error) {
 	var annots []string
 
 	annot, err := getK8sPodAnnotations(client, k8sArgs)
@@ -302,7 +302,7 @@ func ParsePodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sAr
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
 
-	annots, err = parseCNIAnnotations(annot, client, k8sArgs)
+	annots, err = parseCNIAnnotations(annot, client, k8sArgs, conf)
 
 	return annots, err
 
@@ -331,12 +331,13 @@ func ParsePodAnnotationsForNetworks(client *kubernetes.Clientset, k8sArgs utils.
 }
 
 //  parseCNIAnnotations parses pod yaml defintion for "cni" annotations.
-func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) ([]string, error) {
+func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs, conf utils.NetConf) ([]string, error) {
 	var finalAnnots []string
 
 	if len(annot) == 0 {
-		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Default plugin is weave! annot is %V\n", annot)
-		finalAnnots = []string{"weave"}
+		plugin := defaultPlugin(conf)
+		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Using default plugin: %s,  annot is %v\n", plugin, annot)
+		finalAnnots = []string{plugin}
 	} else if strings.TrimSpace(annot["cni"]) == "" {
 		networksAnnot := ParsePodAnnotationsForNetworks(client, k8sArgs)
 		if networksAnnot == "" {
@@ -646,4 +647,11 @@ func runtimeConf(cniArgs utils.CNIArgs, iface string) (*libcni.RuntimeConf, erro
 			{"K8S_POD_NAME", string(k8sArgs.K8S_POD_NAME)},
 			{"K8S_POD_INFRA_CONTAINER_ID", string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID)},
 		}}, nil
+}
+
+func defaultPlugin(conf utils.NetConf) string {
+	if conf.DefaultPlugin == "" {
+		return "weave"
+	}
+	return conf.DefaultPlugin
 }
