@@ -1,0 +1,22 @@
+apiVersion: admissionregistration.k8s.io/v1alpha1
+kind: ExternalAdmissionHookConfiguration
+metadata:
+  name: config1
+externalAdmissionHooks:
+  - name: genie-network-admission-controller.k8s.io
+    rules:
+      - operations:
+          - CREATE
+        apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        resources:
+          - logicalnetworks
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: default
+        name: genie-network-admission-controller
+      caBundle:
+        
