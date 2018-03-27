@@ -10,6 +10,33 @@ rules:
       - pods
     verbs:
       - get
+      - update
+  - apiGroups:
+      - "alpha.network.k8s.io"
+    resources:
+      - logicalnetworks
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - "alpha.network.k8s.io"
+    resources:
+      - physicalnetworks
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/status
+    verbs:
       - patch
 ---
 kind: ClusterRoleBinding
@@ -95,6 +122,7 @@ spec:
     spec:
       hostNetwork: true
       hostPID: true
+      serviceAccountName: genie
       containers:
         # Create a container with install.sh that 
         # Installs required 00-genie.conf and genie binary
