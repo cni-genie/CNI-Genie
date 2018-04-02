@@ -1,0 +1,9 @@
+apiVersion: alpha.network.k8s.io/v1
+kind: Physicalnetwork
+metadata:
+  name: phynet2
+  namespace: default
+spec:
+  refer_nic: eth1
+  sharedStaus:
+    dedicatedNet: false

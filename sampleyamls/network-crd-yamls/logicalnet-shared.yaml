@@ -1,0 +1,9 @@
+apiVersion: alpha.network.k8s.io/v1
+kind: Logicalnetwork
+metadata:
+  name: net2
+  namespace: default
+spec:
+  physicalNet: "phynet2"
+  plugin: "flannel"
+  sub_subnet: "10.244.0.0/24"
