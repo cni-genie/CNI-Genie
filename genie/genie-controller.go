@@ -370,17 +370,6 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 		if err != nil {
 			return finalPluginInfos, fmt.Errorf("CNI Genie GetPluginInfoFromNwAnnot err= %v\n", err)
 		}
-		/*pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
-		if err != nil {
-			return finalAnnots, fmt.Errorf("CNI Genie Error getting pod = %s", err)
-		}
-		pod.Annotations["cni"] = cns[0]
-
-		pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Update(pod)
-		if err != nil {
-			return finalAnnots, fmt.Errorf("CNI Genie Error updating pod = %s", err)
-		}
-		finalAnnots = cns */
 	} else {
 		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
 		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
