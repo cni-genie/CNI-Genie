@@ -1,0 +1,8 @@
+apiVersion: alpha.network.k8s.io/v1
+kind: Logicalnetwork
+metadata:
+  name: net1
+  namespace: default
+spec:
+  physicalNet: "phynet1"
+  sub_subnet: "10.32.0.0/24"

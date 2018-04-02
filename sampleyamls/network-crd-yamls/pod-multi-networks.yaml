@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-multi-network-pod
+  labels:
+    app: web
+  annotations:
+    cni: ""
+    networks: net1:eth0,net2:eth4
+spec:
+  containers:
+    - name: key-value-store
+      image: busybox
+      command : ["top"]
+      imagePullPolicy: IfNotPresent
