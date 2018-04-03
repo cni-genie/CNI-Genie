@@ -11,6 +11,7 @@ rules:
     verbs:
       - get
       - update
+      - patch
   - apiGroups:
       - "alpha.network.k8s.io"
     resources:
