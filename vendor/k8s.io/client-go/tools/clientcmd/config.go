@@ -26,7 +26,7 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
@@ -68,7 +68,9 @@ func (o *PathOptions) GetEnvVarFiles() []string {
 		return []string{}
 	}
 
-	return filepath.SplitList(envVarValue)
+	fileList := filepath.SplitList(envVarValue)
+	// prevent the same path load multiple times
+	return deduplicate(fileList)
 }
 
 func (o *PathOptions) GetLoadingPrecedence() []string {
@@ -325,7 +327,7 @@ func ModifyConfig(configAccess ConfigAccess, newConfig clientcmdapi.Config, rela
 	return nil
 }
 
-func PersisterForUser(configAccess ConfigAccess, user string) rest.AuthProviderConfigPersister {
+func PersisterForUser(configAccess ConfigAccess, user string) restclient.AuthProviderConfigPersister {
 	return &persister{configAccess, user}
 }
 
