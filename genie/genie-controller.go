@@ -35,9 +35,9 @@ import (
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
-	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
+	api "k8s.io/apimachinery/pkg/types"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -233,7 +233,7 @@ func UpdatePodDefinition(intfName string, result types.Result, multiIPPrefAnnot 
 		`{"metadata":{"annotations":{"%s":%s}}}`, MultiIPPreferencesAnnotation, strconv.Quote(string(tmpMultiIPPreferences)))
 
 	fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[MultiIPPreferencesAnnotation] after = %s\n", multiIPPref)
-	pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Patch(pod.Name, api.StrategicMergePatchType, []byte(multiIPPref))
+	pod, err = client.CoreV1().Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Patch(pod.Name, api.StrategicMergePatchType, []byte(multiIPPref))
 	if err != nil {
 		return multiIPPrefAnnot, fmt.Errorf("CNI Genie Error updating pod = %s", err)
 	}
@@ -242,7 +242,7 @@ func UpdatePodDefinition(intfName string, result types.Result, multiIPPrefAnnot 
 
 // GetPodDefinition gets pod definition through k8s api server
 func GetPodDefinition(client *kubernetes.Clientset, podNamespace string, podName string) (*v1.Pod, error) {
-	pod, err := client.Pods(podNamespace).Get(fmt.Sprintf("%s", podName), metav1.GetOptions{})
+	pod, err := client.CoreV1().Pods(podNamespace).Get(fmt.Sprintf("%s", podName), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -379,16 +379,16 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 			return finalPluginInfos, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie cns= %v\n", cns)
-		pod, err := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+		pod, err := client.CoreV1().Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		if err != nil {
 			return finalPluginInfos, fmt.Errorf("CNI Genie Error updating pod = %s", err)
 		}
 		cni := fmt.Sprintf(`{"metadata":{"annotations":{"cni":"%s"}}}`, cns)
-		pod, err = client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Patch(pod.Name, api.StrategicMergePatchType, []byte(cni))
+		pod, err = client.CoreV1().Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Patch(pod.Name, api.StrategicMergePatchType, []byte(cni))
 		if err != nil {
 			return finalPluginInfos, fmt.Errorf("CNI Genie Error updating pod = %s", err)
 		}
-		podTmp, _ := client.Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
+		podTmp, _ := client.CoreV1().Pods(string(k8sArgs.K8S_POD_NAMESPACE)).Get(fmt.Sprintf("%s", k8sArgs.K8S_POD_NAME), metav1.GetOptions{})
 		fmt.Fprintf(os.Stderr, "CNI Genie pod.Annotations[cni] after = %s\n", podTmp.Annotations["cni"])
 		//finalAnnots = []string{cns}
 		finalPluginInfos = []utils.PluginInfo{
