@@ -506,10 +506,6 @@ func addNetwork(intfName string, cniName string, cniArgs utils.CNIArgs) (types.R
 	var result types.Result
 	var err error
 
-	if os.Setenv("CNI_IFNAME", intfName) != nil {
-		fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-	}
-
 	fmt.Fprintf(os.Stderr, "CNI Genie cniName=%v intfName =%v\n", cniName, intfName)
 
 	cniConfig := libcni.CNIConfig{Path: []string{DefaultPluginDir}}
@@ -568,10 +564,6 @@ func addNetwork(intfName string, cniName string, cniArgs utils.CNIArgs) (types.R
 // deleteNetwork is a core function that delegates call to release IP from a Container Networking Solution (CNI Plugin)
 func deleteNetwork(intfName string, cniName string, cniArgs utils.CNIArgs) error {
 	var conf *libcni.NetworkConfigList
-
-	if os.Setenv("CNI_IFNAME", intfName) != nil {
-		fmt.Fprintf(os.Stderr, "CNI_IFNAME Error\n")
-	}
 
 	cniConfig := libcni.CNIConfig{Path: []string{DefaultPluginDir}}
 
