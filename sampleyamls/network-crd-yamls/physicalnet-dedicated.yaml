@@ -1,0 +1,12 @@
+apiVersion: alpha.network.k8s.io/v1
+kind: Physicalnetwork
+metadata:
+  name: phynet1
+  namespace: default
+spec:
+  refer_nic: eth0
+  sharedStatus:
+    dedicatedNet: true 
+    plugin: weave
+    subnet: "10.32.0.0/16"
+

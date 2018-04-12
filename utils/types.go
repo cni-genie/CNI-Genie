@@ -133,3 +133,42 @@ type IPAddressPreferences struct {
 	Ip        string `json:"ip,omitempty"`
 	Interface string `json:"interface,omitempty"`
 }
+
+//Details of logical network info for user pod
+type LogicalNetwork struct {
+	apiVersion string `json:"apiVersion"`
+	Metadata   struct {
+		Name      string `json:"name"`
+		Namespace string `json:"namespace"`
+	} `json:"metadata"`
+	Spec struct {
+		PhysicalNet string `json:"physicalNet,omitempty"`
+		SubSubnet   string `json:"sub_subnet,omitempty"`
+		Plugin      string `json:"plugin,omitempty"`
+	} `json:"spec"`
+}
+
+//Details of physical network info for user pod
+type PhysicalNetwork struct {
+	apiVersion string `json:"apiVersion"`
+	Metadata   struct {
+		Name      string `json:"name"`
+		Namespace string `json:"namespace,omitempty"`
+	} `json:"metadata"`
+	Spec struct {
+		ReferNic     string `json:"refer_nic"`
+		SharedStatus struct {
+			Plugin          string `json:"plugin,omitempty"`
+			Subnet          string `json:"subnet,omitempty"`
+			DedicatedStatus bool   `json:"dedicatedNet"`
+		} `json:"sharedStatus"`
+	} `json:"spec"`
+}
+
+//Details of plugin info for user pod
+type PluginInfo struct {
+	PluginName string
+	IfName     string
+	Subnet     string
+	Refer_nic  string
+}
