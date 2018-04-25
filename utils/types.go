@@ -21,6 +21,7 @@ import (
 
 	"github.com/containernetworking/cni/pkg/types"
 	c "github.com/google/cadvisor/info/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ContainerInfoGenie struct {
@@ -136,11 +137,9 @@ type IPAddressPreferences struct {
 
 //Details of logical network info for user pod
 type LogicalNetwork struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 	apiVersion string `json:"apiVersion"`
-	Metadata   struct {
-		Name      string `json:"name"`
-		Namespace string `json:"namespace"`
-	} `json:"metadata"`
 	Spec struct {
 		PhysicalNet string `json:"physicalNet,omitempty"`
 		SubSubnet   string `json:"sub_subnet,omitempty"`
@@ -148,13 +147,20 @@ type LogicalNetwork struct {
 	} `json:"spec"`
 }
 
+// LogicalNetworkList is a list of LogicalNetworkList resource
+type LogicalNetworkList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []LogicalNetwork `json:"items"`
+}
+
+
 //Details of physical network info for user pod
 type PhysicalNetwork struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 	apiVersion string `json:"apiVersion"`
-	Metadata   struct {
-		Name      string `json:"name"`
-		Namespace string `json:"namespace,omitempty"`
-	} `json:"metadata"`
 	Spec struct {
 		ReferNic     string `json:"refer_nic"`
 		SharedStatus struct {
