@@ -69,6 +69,8 @@ net1 and net2 can communicate with each other
 
 No communication between net1 and any other networks
 
+net2, net3 and net4 can communicate with each other
+
 ### Scenario 3
 ##### ***Logical Networks present:***
 net1, net2, net3, net4
@@ -97,6 +99,8 @@ net1 and net2 can communicate with each other
 net1 and net3 can communicate with each other
 
 No communication between net1 and any other networks
+
+net2, net3 and net4 can communicate with each other
 
 ### Scenario 4
 ##### ***Logical Networks present:***
@@ -129,6 +133,8 @@ net1 and net4 can communicate with each other
 
 No communication between net1 and any other networks
 
+net2 and net4 can communicate with each other
+
 ### Scenario 5
 
 ##### ***Logical Networks present:***
@@ -155,6 +161,8 @@ net1 and net3 can communicate with each other
 
 No communication between net1 and any other networks
 
+net2, net3 and net4 can communicate with each other
+
 ##### ***Now, to deny communication between L1 and L2, edit the network policy object***
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -173,3 +181,5 @@ metadata:
 net1 and net2 can communicate with each other
 
 No communication between net1 and any other networks
+
+net2, net3 and net4 can communicate with each other
