@@ -23,29 +23,42 @@ import (
 	"net/http"
 
 	"github.com/golang/glog"
-	"k8s.io/api/admission/v1alpha1"
+	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	genieUtils "github.com/network-admission-controller/utils"
+
 )
 
 // only allow logical networks objects to be created only when all input validations are passed
-func admit(data []byte) *v1alpha1.AdmissionReviewStatus {
-	ar := v1alpha1.AdmissionReview{}
+func admit(data []byte) *v1beta1.AdmissionResponse {
+	ar := v1beta1.AdmissionReview{}
+
+
 	if err := json.Unmarshal(data, &ar); err != nil {
 		glog.Error(err)
 		return nil
 	}
 	// The externalAdmissionHookConfiguration registered via selfRegistration
 	// asks the kube-apiserver only sends admission request regarding logical networks.
-	logicalNwResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "logicalnetworks"}
-	if ar.Spec.Resource != logicalNwResource {
+	logicalNwResource := metav1.GroupVersionResource{Group: "alpha.network.k8s.io", Version: "v1", Resource: "logicalnetworks"}
+	if ar.Request.Resource != logicalNwResource {
 		glog.Errorf("expect resource to be %s", logicalNwResource)
 		return nil
 	}
 
-	reviewStatus := v1alpha1.AdmissionReviewStatus{}
-	/* Validation for logical network to be done here*/
-	reviewStatus.Allowed = true
-	return &reviewStatus
+	raw := ar.Request.Object.Raw
+	glog.Info("raw =", raw)
+
+	logicalNw := genieUtils.LogicalNetwork{}
+	if err := json.Unmarshal(raw, &logicalNw); err != nil {
+		glog.Info("Unmarshal failed")
+		glog.Error(err)
+		return nil
+	}
+
+	admissionResponse := validateNetworkParas(&logicalNw)
+
+	return admissionResponse
 }
 
 // Will be called whenever user create logical network object
@@ -65,8 +78,8 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reviewStatus := admit(body)
-	ar := v1alpha1.AdmissionReview{
-		Status: *reviewStatus,
+	ar := v1beta1.AdmissionReview{
+		Response: reviewStatus,
 	}
 
 	resp, err := json.Marshal(ar)
@@ -81,6 +94,7 @@ func serve(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	http.HandleFunc("/", serve)
+	initURLs()
 	clientset := getClient()
 	server := &http.Server{
 		Addr:      ":8000",

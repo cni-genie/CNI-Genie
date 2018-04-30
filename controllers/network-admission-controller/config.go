@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/api/admissionregistration/v1alpha1"
+	"k8s.io/api/admissionregistration/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -71,7 +71,7 @@ func configTLS(clientset *kubernetes.Clientset) *tls.Config {
 	return &tls.Config{
 		Certificates: []tls.Certificate{sCert},
 		ClientCAs:    apiserverCA,
-		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientAuth:   tls.NoClientCert,
 	}
 }
 
@@ -79,30 +79,30 @@ func configTLS(clientset *kubernetes.Clientset) *tls.Config {
 // by creating externalAdmissionHookConfigurations.
 func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 	time.Sleep(10 * time.Second)
-	client := clientset.AdmissionregistrationV1alpha1().ExternalAdmissionHookConfigurations()
+	client := clientset.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
 	_, err := client.Get("genie-network-admission-controller-config", metav1.GetOptions{})
 	if err == nil {
 		if err2 := client.Delete("genie-network-admission-controller-config", nil); err2 != nil {
 			glog.Fatal(err2)
 		}
 	}
-	webhookConfig := &v1alpha1.ExternalAdmissionHookConfiguration{
+	webhookConfig := &v1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "genie-network-admission-controller-config",
 		},
-		ExternalAdmissionHooks: []v1alpha1.ExternalAdmissionHook{
+		Webhooks: []v1beta1.Webhook{
 			{
 				Name: "genie-network-admission-controller.k8s.io",
-				Rules: []v1alpha1.RuleWithOperations{{
-					Operations: []v1alpha1.OperationType{v1alpha1.Create, v1alpha1.Update},
-					Rule: v1alpha1.Rule{
-						APIGroups:   []string{""},
+				Rules: []v1beta1.RuleWithOperations{{
+					Operations: []v1beta1.OperationType{v1beta1.Create, v1beta1.Update},
+					Rule: v1beta1.Rule{
+						APIGroups:   []string{"alpha.network.k8s.io"},
 						APIVersions: []string{"v1"},
 						Resources:   []string{"logicalnetworks"},
 					},
 				}},
-				ClientConfig: v1alpha1.AdmissionHookClientConfig{
-					Service: v1alpha1.ServiceReference{
+				ClientConfig: v1beta1.WebhookClientConfig{
+					Service: &v1beta1.ServiceReference{
 						Namespace: "default",
 						Name:      "genie-network-admission-controller",
 					},

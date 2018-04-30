@@ -15,10 +15,10 @@
 # limitations under the License.
 
 # Generates the a CA cert, a server key, and a server cert signed by the CA. 
-# reference: https://github.com/kubernetes/kubernetes/blob/master/plugin/pkg/admission/webhook/gencerts.sh
+# reference: https://github.com/kubernetes/kubernetes/blob/master/plugin/pkg/admission/genie-network-admission-controller/gencerts.sh
 set -e
 
-CN_BASE="generic_webhook_admission_example"
+CN_BASE="genie-network-admission-controller"
 
 cat > server.conf << EOF
 [req]
@@ -37,8 +37,8 @@ openssl req -x509 -new -nodes -key caKey.pem -days 100000 -out caCert.pem -subj 
 
 # Create a server certiticate
 openssl genrsa -out serverKey.pem 2048
-# Note the CN is the DNS name of the service of the webhook.
-openssl req -new -key serverKey.pem -out server.csr -subj "/CN=webhook.default.svc" -config server.conf
+# Note the CN is the DNS name of the service of the genie-network-admission-controller.
+openssl req -new -key serverKey.pem -out server.csr -subj "/CN=genie-network-admission-controller.default.svc" -config server.conf
 openssl x509 -req -in server.csr -CA caCert.pem -CAkey caKey.pem -CAcreateserial -out serverCert.pem -days 100000 -extensions v3_req -extfile server.conf
 
 outfile=certs.go
