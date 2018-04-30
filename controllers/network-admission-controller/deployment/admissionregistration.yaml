@@ -1,8 +1,8 @@
-apiVersion: admissionregistration.k8s.io/v1alpha1
-kind: ExternalAdmissionHookConfiguration
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
 metadata:
   name: config1
-externalAdmissionHooks:
+webhooks:
   - name: genie-network-admission-controller.k8s.io
     rules:
       - operations:
@@ -13,7 +13,7 @@ externalAdmissionHooks:
           - v1
         resources:
           - logicalnetworks
-    failurePolicy: Ignore
+    failurePolicy: Fail
     clientConfig:
       service:
         namespace: default
