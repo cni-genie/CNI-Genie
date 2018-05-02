@@ -34,10 +34,10 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/golang/glog"
-	"k8s.io/client-go/kubernetes"
-	api "k8s.io/apimachinery/pkg/types"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -124,7 +124,7 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 			intfName = "eth" + strconv.Itoa(i)
 		}
 		// fetches an IP from corresponding CNS IPAM and returns result object
-		result, err = addNetwork(intfName, pluginElement.PluginName, cniArgs)
+		result, err = addNetwork(intfName, pluginElement, cniArgs)
 		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork err *** %v result***  %v\n", err, result)
 		if err != nil {
 			newErr = err
@@ -501,11 +501,45 @@ func createConfIfBinaryExists(cniName string) (*libcni.NetworkConfigList, error)
 	return confList, nil
 }
 
+func insertSubnet(conf map[string]interface{}, subnet string) {
+	ipam := make(map[string]interface{})
+
+	if conf["ipam"] != nil {
+		ipam = conf["ipam"].(map[string]interface{})
+	}
+	ipam["subnet"] = subnet
+	conf["ipam"] = ipam
+}
+
+func useCustomSubnet(confdata []byte, subnet string) ([]byte, error) {
+	conf := make(map[string]interface{})
+	err := json.Unmarshal([]byte(confdata), &conf)
+	if err != nil {
+		return nil, fmt.Errorf("Error Unmarshalling confdata: %v", err)
+	}
+
+	// If it is a conflist
+	if conf["plugins"] != nil {
+		// Considering the 0th element in the plugin array as the plugin configuration
+		insertSubnet(conf["plugins"].([]interface{})[0].(map[string]interface{}), subnet)
+	} else {
+		insertSubnet(conf, subnet)
+	}
+
+	confbytes, err := json.Marshal(&conf)
+	if err != nil {
+		return nil, fmt.Errorf("Error Marshalling confdata: %v", err)
+	}
+
+	return confbytes, nil
+}
+
 // addNetwork is a core function that delegates call to pull IP from a Container Networking Solution (CNI Plugin)
-func addNetwork(intfName string, cniName string, cniArgs utils.CNIArgs) (types.Result, error) {
+func addNetwork(intfName string, pluginInfo utils.PluginInfo, cniArgs utils.CNIArgs) (types.Result, error) {
 	var result types.Result
 	var err error
 
+	cniName := pluginInfo.PluginName
 	fmt.Fprintf(os.Stderr, "CNI Genie cniName=%v intfName =%v\n", cniName, intfName)
 
 	cniConfig := libcni.CNIConfig{Path: []string{DefaultPluginDir}}
@@ -543,6 +577,14 @@ func addNetwork(intfName string, cniName string, cniArgs utils.CNIArgs) (types.R
 			return nil, err
 		}
 		cniType = cniName
+	}
+
+	if pluginInfo.Subnet != "" {
+		confbytes, err := useCustomSubnet(netConfigList.Plugins[0].Bytes, pluginInfo.Subnet)
+		if err != nil {
+			return nil, fmt.Errorf("Error while inserting custom subnet into plugin configuration: %v", err)
+		}
+		netConfigList.Plugins[0].Bytes = confbytes
 	}
 
 	fmt.Fprintf(os.Stderr, "CNI Genie cni type= %s\n", cniType)
