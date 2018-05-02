@@ -38,14 +38,14 @@ type PluginSubnetUsageData struct {
 }
 
 const (
-	ERR_NO_PLUGIN_MENTIONED_IN_LOGICAL_NETWORK  = "No plugin mentioned in logical network"
-	ERR_NO_PLUGIN_MENTIONED_IN_PHYSICAL_NETWORK = "No plugin mentioned in physical network"
-	ERR_PHYSICAL_NW_NOT_FOUND                   = "Physical network not found"
-	ERR_INVALID_INNER_SUBNET                    = "Invalid inner subnet range"
-	ERR_SUBNET_OVERLAP_WITH_OTHER               = "Inner subnet overlap with some other logical network subnet"
-	ERR_SUBNET_NOT_SPECIFIED                    = "Subnet not specified for logical network while using shared physical network"
-	ERR_INCORRECT_PHYSICALNETWORK_PARAS         = "Incorrect physical network parameters"
-	ERR_INTERNAL_PROCESSING_FAILED              = "Internal processing failure"
+	ERR_NO_PLUGIN_MENTIONED_IN_LOGICAL_NETWORK = "No plugin mentioned in logical network";
+	ERR_NO_PLUGIN_MENTIONED_IN_PHYSICAL_NETWORK = "No plugin mentioned in physical network";
+	ERR_PHYSICAL_NW_NOT_FOUND = "Physical network not found";
+	ERR_INVALID_INNER_SUBNET = "Invalid inner subnet range";
+	ERR_SUBNET_OVERLAP_WITH_OTHER = "Inner subnet overlap with some other logical network subnet";
+	ERR_SUBNET_NOT_SPECIFIED = "Subnet not specified for logical network while using shared physical network";
+	ERR_INCORRECT_PHYSICALNETWORK_PARAS = "Incorrect physical network parameters";
+	ERR_INTERNAL_PROCESSING_FAILED = "Internal processing failure";
 )
 
 var PluginSubnetUsageDataList []PluginSubnetUsageData
@@ -86,8 +86,8 @@ func checkSubnetOverlap(firstSubnetStr, secondSubnetStr string) bool {
 	_, secondSubnet, _ := net.ParseCIDR(secondSubnetStr)
 
 	for i := range secondSubnet.IP {
-		if secondSubnet.IP[i]&secondSubnet.Mask[i] != firstSubnet.IP[i]&firstSubnet.Mask[i]&secondSubnet.Mask[i] {
-			isFirstPartofSecond = false
+                if secondSubnet.IP[i]&secondSubnet.Mask[i] != firstSubnet.IP[i]&firstSubnet.Mask[i]&secondSubnet.Mask[i] {
+                        isFirstPartofSecond = false
 		}
 	}
 
@@ -96,8 +96,8 @@ func checkSubnetOverlap(firstSubnetStr, secondSubnetStr string) bool {
 	}
 
 	for i := range firstSubnet.IP {
-		if firstSubnet.IP[i]&firstSubnet.Mask[i] != secondSubnet.IP[i]&secondSubnet.Mask[i]&firstSubnet.Mask[i] {
-			isSecondPartofFirst = false
+                if firstSubnet.IP[i]&firstSubnet.Mask[i] != secondSubnet.IP[i]&secondSubnet.Mask[i]&firstSubnet.Mask[i] {
+                        isSecondPartofFirst = false
 		}
 	}
 
@@ -105,9 +105,10 @@ func checkSubnetOverlap(firstSubnetStr, secondSubnetStr string) bool {
 		return true
 	}
 
-	/* This means 2 subnets do not overlap*/
+        /* This means 2 subnets do not overlap*/
 	return false
 }
+
 
 /* Function to validate whether the innerSubnetStr is part of outer subnet or not*/
 func checkIfValidInnerSubnet(outerSubnetStr, innerSubnetStr string) bool {
@@ -116,7 +117,7 @@ func checkIfValidInnerSubnet(outerSubnetStr, innerSubnetStr string) bool {
 	_, innerSubnet, _ := net.ParseCIDR(innerSubnetStr)
 
 	for i := range outerSubnet.IP {
-		if outerSubnet.IP[i]&outerSubnet.Mask[i] != innerSubnet.IP[i]&innerSubnet.Mask[i]&outerSubnet.Mask[i] {
+                if outerSubnet.IP[i]&outerSubnet.Mask[i] != innerSubnet.IP[i]&innerSubnet.Mask[i]&outerSubnet.Mask[i] {
 			return false
 		}
 	}
@@ -153,6 +154,7 @@ func validateNetworkParas(logicalNetwork *genieUtils.LogicalNetwork) *v1beta1.Ad
 	physicalNwPath := fmt.Sprintf("/apis/alpha.network.k8s.io/v1/namespaces/%s/physicalnetworks/%s",
 		logicalNetwork.ObjectMeta.Namespace, phyNwName)
 
+
 	physicalNwObj, err := client.ExtensionsV1beta1().RESTClient().Get().AbsPath(physicalNwPath).DoRaw()
 
 	if err != nil {
@@ -175,10 +177,11 @@ func validateNetworkParas(logicalNetwork *genieUtils.LogicalNetwork) *v1beta1.Ad
 
 		selectedPluginName := physicalNwInfo.Spec.SharedStatus.Plugin
 
-		if "" == selectedPluginName {
+                if "" == selectedPluginName {
 			admissionResponse.Result = &metav1.Status{
 				Reason: ERR_NO_PLUGIN_MENTIONED_IN_PHYSICAL_NETWORK,
 			}
+
 			return &admissionResponse
 
 		}
@@ -186,7 +189,8 @@ func validateNetworkParas(logicalNetwork *genieUtils.LogicalNetwork) *v1beta1.Ad
 		outerSubnet := physicalNwInfo.Spec.SharedStatus.Subnet
 
 		isvalidSubnet := checkIfValidInnerSubnet(outerSubnet, logicalNetwork.Spec.SubSubnet)
-		if false == isvalidSubnet {
+                if false == isvalidSubnet {
+
 			admissionResponse.Result = &metav1.Status{
 				Reason: ERR_INVALID_INNER_SUBNET,
 			}
@@ -195,19 +199,18 @@ func validateNetworkParas(logicalNetwork *genieUtils.LogicalNetwork) *v1beta1.Ad
 		selectedSubnet = logicalNetwork.Spec.SubSubnet
 	} else {
 		/* Incase of shared physical network, subnet and plugin must be specified as part of logical network*/
-		if "" == logicalNetwork.Spec.Plugin {
-			admissionResponse.Result = &metav1.Status{
-				Reason: ERR_NO_PLUGIN_MENTIONED_IN_LOGICAL_NETWORK,
-			}
-			return &admissionResponse
+                if "" == logicalNetwork.Spec.Plugin {
+                        admissionResponse.Result = &metav1.Status{
+                                Reason: ERR_NO_PLUGIN_MENTIONED_IN_LOGICAL_NETWORK,
+                        }
+                        return &admissionResponse
 
 		}
-
-		if "" == logicalNetwork.Spec.SubSubnet {
-			admissionResponse.Result = &metav1.Status{
-				Reason: ERR_SUBNET_NOT_SPECIFIED,
-			}
-			return &admissionResponse
+                if "" == logicalNetwork.Spec.SubSubnet {
+                        admissionResponse.Result = &metav1.Status{
+                                Reason: ERR_SUBNET_NOT_SPECIFIED,
+                        }
+                        return &admissionResponse
 
 		}
 
@@ -221,17 +224,19 @@ func validateNetworkParas(logicalNetwork *genieUtils.LogicalNetwork) *v1beta1.Ad
 	/* Check whether the subnet is already part of any other logical network*/
 	if nil != PluginSubnetUsageDataList {
 		for i := range PluginSubnetUsageDataList {
-			if PluginSubnetUsageDataList[i].PluginName == selectedPluginName {
+                        if PluginSubnetUsageDataList[i].PluginName == selectedPluginName {
 				isPluginFound = true
 				pluginSubnetUsageData = PluginSubnetUsageDataList[i]
-				break
+                                break
 			}
+
 
 		}
 	}
 
 	/* First time, entry for this plugin is getting added */
 	if false == isPluginFound {
+
 		pluginSubnetUsageData.PluginName = selectedPluginName
 		pluginSubnetUsageData.SubnetUsageData = make(map[string]string)
 		pluginSubnetUsageData.SubnetUsageData[selectedSubnet] = logicalNetwork.ObjectMeta.Name
