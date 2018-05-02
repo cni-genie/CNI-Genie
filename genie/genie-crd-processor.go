@@ -115,7 +115,7 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 
 		pluginInfo, err := GetPluginInfoFromPhysicalNw(logicalNwInfo.Spec.PhysicalNet, namespace, client, pluginInfo)
 
-		if logicalNwInfo.Spec.PhysicalNet == "" {
+		if logicalNwInfo.Spec.SubSubnet != "" {
 			pluginInfo.Subnet = logicalNwInfo.Spec.SubSubnet
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie pluginInfoList pluginInfo=%v\n", pluginInfo)
