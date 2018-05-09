@@ -34,10 +34,10 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/golang/glog"
-	"k8s.io/client-go/kubernetes"
-	api "k8s.io/apimachinery/pkg/types"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -347,10 +347,13 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	var pluginInfo utils.PluginInfo
 
 	if len(annot) == 0 {
-		plugin := defaultPlugin(conf)
-		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Using default plugin: %s,  annot is %v\n", plugin, annot)
-		finalPluginInfos = []utils.PluginInfo{
-			{PluginName: plugin},
+		plugins := defaultPlugins(conf)
+		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Using default plugins: %v,  annot is %v\n", plugins, annot)
+		finalPluginInfos = []utils.PluginInfo{}
+		for _, pluginName := range plugins {
+			pluginInfo.PluginName = pluginName
+			finalPluginInfos = append(finalPluginInfos, pluginInfo)
+			pluginInfo = utils.PluginInfo{}
 		}
 	} else if strings.TrimSpace(annot["cni"]) != "" {
 		cniAnnots := strings.Split(annot["cni"], ",")
@@ -658,9 +661,9 @@ func runtimeConf(cniArgs utils.CNIArgs, iface string) (*libcni.RuntimeConf, erro
 		}}, nil
 }
 
-func defaultPlugin(conf utils.NetConf) string {
+func defaultPlugins(conf utils.NetConf) []string {
 	if conf.DefaultPlugin == "" {
-		return "weave"
+		return []string{"weave"}
 	}
-	return conf.DefaultPlugin
+	return strings.Split(conf.DefaultPlugin, ",")
 }
