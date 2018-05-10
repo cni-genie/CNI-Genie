@@ -34,10 +34,10 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/golang/glog"
-	"k8s.io/client-go/kubernetes"
-	api "k8s.io/apimachinery/pkg/types"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -639,23 +639,25 @@ func runtimeConf(cniArgs utils.CNIArgs, iface string) (*libcni.RuntimeConf, erro
 	if err != nil {
 		return nil, err
 	}
-	var ignoreUnknown string
+	args := [][2]string{}
 	if k8sArgs.IgnoreUnknown {
-		ignoreUnknown = "1"
-	} else {
-		ignoreUnknown = "0"
+		args = append(args, [2]string{"IgnoreUnknown", "1"})
+	}
+	if string(k8sArgs.K8S_POD_NAMESPACE) != "" {
+		args = append(args, [2]string{"K8S_POD_NAMESPACE", string(k8sArgs.K8S_POD_NAMESPACE)})
+	}
+	if string(k8sArgs.K8S_POD_NAME) != "" {
+		args = append(args, [2]string{"K8S_POD_NAME", string(k8sArgs.K8S_POD_NAME)})
+	}
+	if string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID) != "" {
+		args = append(args, [2]string{"K8S_POD_INFRA_CONTAINER_ID", string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID)})
 	}
 
 	return &libcni.RuntimeConf{
 		ContainerID: cniArgs.ContainerID,
 		NetNS:       cniArgs.Netns,
 		IfName:      iface,
-		Args: [][2]string{
-			{"IgnoreUnknown", ignoreUnknown},
-			{"K8S_POD_NAMESPACE", string(k8sArgs.K8S_POD_NAMESPACE)},
-			{"K8S_POD_NAME", string(k8sArgs.K8S_POD_NAME)},
-			{"K8S_POD_INFRA_CONTAINER_ID", string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID)},
-		}}, nil
+		Args:        args}, nil
 }
 
 func defaultPlugin(conf utils.NetConf) string {
