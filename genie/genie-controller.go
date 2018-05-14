@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"sort"
 	"strconv"
@@ -84,6 +85,7 @@ func ParseCNIConf(confData []byte) (utils.NetConf, error) {
 func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, error) {
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
+	var endResult types.Result
 	var result types.Result
 
 	k8sArgs, err := loadArgs(cniArgs)
@@ -129,6 +131,10 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 		if err != nil {
 			newErr = err
 		}
+		endResult, err = mergeWithResult(result, endResult)
+		if err != nil {
+			newErr = err
+		}
 		// Update pod definition with IPs "multi-ip-preferences"
 		multiIPPrefAnnot, err = UpdatePodDefinition(intfName, result, multiIPPrefAnnot, kubeClient, k8sArgs)
 		if err != nil {
@@ -138,7 +144,7 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 	if newErr != nil {
 		return nil, fmt.Errorf("CNI Genie error at addNetwork: %v", newErr)
 	}
-	return result, nil
+	return endResult, nil
 }
 
 // DeletePodNetwork deletes pod networking. It has logic to parse each pod
@@ -665,4 +671,102 @@ func defaultPlugin(conf utils.NetConf) string {
 		return "weave"
 	}
 	return conf.DefaultPlugin
+}
+
+func mergeWithResult(srcObj, dstObj types.Result) (types.Result, error) {
+	srcObj, err := updateRoutes(srcObj)
+	if err != nil {
+		return nil, fmt.Errorf("Routes update failed: %v", err)
+	}
+	srcObj, err = fixInterfaces(srcObj)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to fix interfaces: %v", err)
+	}
+
+	if dstObj == nil {
+		return srcObj, nil
+	}
+	src, err := current.NewResultFromResult(srcObj)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't convert old result to current version: %v", err)
+	}
+	dst, err := current.NewResultFromResult(dstObj)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't convert old result to current version: %v", err)
+	}
+
+	ifacesLength := len(dst.Interfaces)
+
+	for _, iface := range src.Interfaces {
+		dst.Interfaces = append(dst.Interfaces, iface)
+	}
+	for _, ip := range src.IPs {
+		if ip.Interface != -1 {
+			ip.Interface += ifacesLength
+		}
+		dst.IPs = append(dst.IPs, ip)
+	}
+	for _, route := range src.Routes {
+		dst.Routes = append(dst.Routes, route)
+	}
+
+	for _, ns := range src.DNS.Nameservers {
+		dst.DNS.Nameservers = append(dst.DNS.Nameservers, ns)
+	}
+	for _, s := range src.DNS.Search {
+		dst.DNS.Search = append(dst.DNS.Search, s)
+	}
+	for _, opt := range src.DNS.Options {
+		dst.DNS.Options = append(dst.DNS.Options, opt)
+	}
+	// TODO: what about DNS.domain?
+	return dst, nil
+}
+
+// updateRoutes changes nil gateway set in a route to a gateway from IPConfig
+// nil gw in route means default gw from result. When merging results from
+// many results default gw may be set from another CNI network. This may lead to
+// wrong routes.
+func updateRoutes(rObj types.Result) (types.Result, error) {
+	result, err := current.NewResultFromResult(rObj)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't convert old result to current version: %v", err)
+	}
+	if len(result.Routes) == 0 {
+		return result, nil
+	}
+
+	var gw net.IP
+	for _, ip := range result.IPs {
+		if ip.Gateway != nil {
+			gw = ip.Gateway
+			break
+		}
+	}
+
+	for _, route := range result.Routes {
+		if route.GW == nil {
+			if gw == nil {
+				return nil, fmt.Errorf("Couldn't find gw in result %v", result)
+			}
+			route.GW = gw
+		}
+	}
+	return result, nil
+}
+
+// fixInterfaces fixes bad result returned by CNI plugin
+// some plugins(for example calico) return empty Interfaces list but
+// in IPConfig sets Interface index to 0. In such case it should be -1
+func fixInterfaces(rObj types.Result) (types.Result, error) {
+	result, err := current.NewResultFromResult(rObj)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't convert old result to current version: %v", err)
+	}
+	if len(result.Interfaces) == 0 {
+		for _, ip := range result.IPs {
+			ip.Interface = -1
+		}
+	}
+	return result, nil
 }
