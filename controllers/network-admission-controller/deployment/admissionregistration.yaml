@@ -1,0 +1,22 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: config1
+webhooks:
+  - name: genie-network-admission-controller.k8s.io
+    rules:
+      - operations:
+          - CREATE
+        apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        resources:
+          - logicalnetworks
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        namespace: default
+        name: genie-network-admission-controller
+      caBundle:
+        

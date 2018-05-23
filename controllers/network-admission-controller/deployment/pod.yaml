@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    role: genie-network-admission-controller
+  name: genie-network-admission-controller
+spec:
+  containers:
+    - name: genie-network-admission-controller
+      image: genie-network-admission-controller:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 8000
