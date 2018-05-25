@@ -1,7 +1,4 @@
-FROM golang:1.8
+FROM busybox
 
-WORKDIR /go/src
-RUN mkdir -p github.com/network-admission-controller
-COPY . ./github.com/network-admission-controller
-RUN go install github.com/network-admission-controller
-CMD ["network-admission-controller","--alsologtostderr","-v=4","2>&1"]
+COPY dist/network-admission-controller /network-admission-controller
+CMD ["/network-admission-controller","--alsologtostderr","--v=4","2>&1"]
