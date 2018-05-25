@@ -23,7 +23,7 @@ import (
 	"net/http"
 
 	"github.com/golang/glog"
-	genieUtils "github.com/network-admission-controller/utils"
+	genieUtils "github.com/Huawei-PaaS/CNI-Genie/utils"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

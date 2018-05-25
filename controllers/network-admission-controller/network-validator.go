@@ -24,7 +24,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/golang/glog"
-	genieUtils "github.com/network-admission-controller/utils"
+	genieUtils "github.com/Huawei-PaaS/CNI-Genie/utils"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"net"
