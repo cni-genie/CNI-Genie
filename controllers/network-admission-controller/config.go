@@ -89,6 +89,7 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 	webhookConfig := &v1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "genie-network-admission-controller-config",
+			Namespace: "kube-system",
 		},
 		Webhooks: []v1beta1.Webhook{
 			{
@@ -103,7 +104,7 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 				}},
 				ClientConfig: v1beta1.WebhookClientConfig{
 					Service: &v1beta1.ServiceReference{
-						Namespace: "default",
+						Namespace: "kube-system",
 						Name:      "genie-network-admission-controller",
 					},
 					CABundle: caCert,
@@ -114,4 +115,5 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 	if _, err := client.Create(webhookConfig); err != nil {
 		glog.Fatal(err)
 	}
+	glog.Info("selfRegistration completed")
 }
