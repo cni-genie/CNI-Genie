@@ -352,7 +352,9 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	var finalPluginInfos []utils.PluginInfo
 	var pluginInfo utils.PluginInfo
 
-	if len(annot) == 0 {
+	_, annotExists := annot["cni"]
+
+	if !annotExists {
 		plugins := defaultPlugins(conf)
 		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Using default plugins: %v,  annot is %v\n", plugins, annot)
 		finalPluginInfos = []utils.PluginInfo{}
