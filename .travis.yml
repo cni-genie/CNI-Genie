@@ -3,8 +3,8 @@ language: go
 
 go:
   - 1.x
-  - 1.8.x
   - master
+  - 1.8.x
 
 # TODO (Karun): This works only if travis has k8s environment. Hence commenting it for now.
 #install:
@@ -20,7 +20,10 @@ services:
 
 env:
   global:
-    - REPO=quay.io/cnigenie/v1.5
+    - REPO=quay.io/huawei-cni-genie
+    - PLUGINREPO=quay.io/huawei-cni-genie/genie-plugin
+    - ADMREPO=quay.io/huawei-cni-genie/genie-admission-controller
+    - POLICYREPO=quay.io/huawei-cni-genie/genie-policy-controller
 
 after_success:
   - docker --version
@@ -29,8 +32,17 @@ after_success:
   - echo 'Travis Build Number is:\n'
   - echo $TRAVIS_BUILD_NUMBER
   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
-  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io/cnigenie/v1.5
-  - docker build -t cnigenie -f conf/1.5/Dockerfile .
-  - docker tag cnigenie:latest $REPO:$TAG
-  - docker tag cnigenie:latest $REPO:$TRAVIS_BUILD_NUMBER
-  - docker push $REPO
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" $REPO
+  - docker build -t cnigenie -f conf/1.8/Dockerfile .
+  - docker tag cnigenie:latest $PLUGINREPO:$TAG
+  - docker tag cnigenie:latest $PLUGINREPO:$TRAVIS_BUILD_NUMBER
+  - docker push $PLUGINREPO
+  - docker build -t genie-adm -f controllers/network-admission-controller/Dockerfile controllers/network-admission-controller
+  - docker tag genie-adm:latest $ADMREPO:$TAG
+  - docker tag genie-adm:latest $ADMREPO:$TRAVIS_BUILD_NUMBER
+  - docker push $ADMREPO
+  - docker build -t genie-policy -f controllers/network-policy-controller/Dockerfile controllers/network-policy-controller
+  - docker tag genie-policy:latest $POLICYREPO:$TAG
+  - docker tag genie-policy:latest $POLICYREPO:$TRAVIS_BUILD_NUMBER
+  - docker push $POLICYREPO
+  - docker logout $REPO
