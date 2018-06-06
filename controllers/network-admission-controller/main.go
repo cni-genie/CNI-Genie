@@ -54,12 +54,13 @@ func admit(data []byte) *v1beta1.AdmissionResponse {
 	}
 
 	admissionResponse := validateNetworkParas(&logicalNw)
-
+	glog.Infof("Admission controller returned response: %v", admissionResponse)
 	return admissionResponse
 }
 
 // Will be called whenever user create logical network object
 func serve(w http.ResponseWriter, r *http.Request) {
+	glog.Info("Admission controller has been called for logical network event")
 	var body []byte
 	if r.Body != nil {
 		if data, err := ioutil.ReadAll(r.Body); err == nil {

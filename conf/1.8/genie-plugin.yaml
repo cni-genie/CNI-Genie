@@ -2,7 +2,7 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: genie
+  name: genie-plugin
 rules:
   - apiGroups:
       - ""
@@ -19,6 +19,7 @@ rules:
     verbs:
       - get
       - update
+      - patch
   - apiGroups:
       - "alpha.network.k8s.io"
     resources:
@@ -26,41 +27,47 @@ rules:
     verbs:
       - get
       - update
-  - apiGroups:
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - nodes/status
-    verbs:
       - patch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+  - apiGroups:
+      - "admissionregistration.k8s.io"
+    resources:
+      - validatingwebhookconfigurations
+    verbs:
+      - get
+      - update
+      - create
+      - delete
+
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: genie
+  name: genie-plugin
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: genie
+  name: genie-plugin
 subjects:
 - kind: ServiceAccount
-  name: genie
+  name: genie-plugin
   namespace: kube-system
 - kind: Group
   name: system:authenticated
   apiGroup: rbac.authorization.k8s.io
+
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: genie
+  name: genie-plugin
   namespace: kube-system
+
 ---
 # This ConfigMap can be used to configure a self-hosted CNI-Genie installation.
 kind: ConfigMap
@@ -94,7 +101,7 @@ data:
 kind: DaemonSet
 apiVersion: extensions/v1beta1
 metadata:
-  name: genie
+  name: genie-plugin
   namespace: kube-system
   labels:
     k8s-app: genie
@@ -111,25 +118,26 @@ spec:
         scheduler.alpha.kubernetes.io/tolerations: |
           [
             {
-              "key": "dedicated", 
-              "value": "master", 
-              "effect": "NoSchedule" 
+              "key": "dedicated",
+              "value": "master",
+              "effect": "NoSchedule"
             },
             {
-              "key": "CriticalAddonsOnly", 
+              "key": "CriticalAddonsOnly",
               "operator": "Exists"
             }
           ]
     spec:
       hostNetwork: true
       hostPID: true
-      serviceAccountName: genie
+      serviceAccountName: genie-plugin
       containers:
-        # Create a container with install.sh that 
+        # Create a container with install.sh that
         # Installs required 00-genie.conf and genie binary
         # on slave node.
         - name: install-cni
-          image: quay.io/cnigenie/v1.5:latest
+          image: quay.io/huawei-cni-genie/genie-plugin:latest 
+          imagePullPolicy: Always 
           command: ["/launch.sh"]
           env:
             - name: CNI_NETWORK_CONFIG
@@ -147,17 +155,56 @@ spec:
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
       volumes:
-        # Used by genie/node.
-        #- name: lib-modules
-        #  hostPath:
-        #    path: /lib/modules
-        #- name: var-run-genie
-        #  hostPath:
-        #    path: /var/run/genie
-        # Used to install CNI.
         - name: cni-bin-dir
           hostPath:
             path: /opt/cni/bin
         - name: cni-net-dir
           hostPath:
             path: /etc/cni/net.d
+
+---
+# Genie network admission controller daemonset configuration
+# Genie network admission controller pods will run only in master nodes
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: genie-network-admission-controller
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        role: genie-network-admission-controller
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: CriticalAddonsOnly
+        operator: Exists
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      hostNetwork: true
+      serviceAccountName: genie-plugin
+      containers:
+        - name: genie-network-admission-controller
+          image: quay.io/huawei-cni-genie/genie-admission-controller:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+---
+# Genie network admission controller service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    role: genie-network-admission-controller
+  name: genie-network-admission-controller
+  namespace: kube-system
+spec:
+  ports:
+    - port: 443
+      targetPort: 8000
+  selector:
+    role: genie-network-admission-controller

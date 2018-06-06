@@ -38,7 +38,7 @@ openssl req -x509 -new -nodes -key caKey.pem -days 100000 -out caCert.pem -subj 
 # Create a server certiticate
 openssl genrsa -out serverKey.pem 2048
 # Note the CN is the DNS name of the service of the genie-network-admission-controller.
-openssl req -new -key serverKey.pem -out server.csr -subj "/CN=genie-network-admission-controller.default.svc" -config server.conf
+openssl req -new -key serverKey.pem -out server.csr -subj "/CN=genie-network-admission-controller.kube-system.svc" -config server.conf
 openssl x509 -req -in server.csr -CA caCert.pem -CAkey caKey.pem -CAcreateserial -out serverCert.pem -days 100000 -extensions v3_req -extfile server.conf
 
 outfile=certs.go
