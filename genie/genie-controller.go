@@ -599,6 +599,10 @@ func addNetwork(intfName string, pluginInfo utils.PluginInfo, cniArgs utils.CNIA
 	}
 
 	fmt.Fprintf(os.Stderr, "CNI Genie cni type= %s\n", cniType)
+	err = os.Unsetenv("CNI_IFNAME")
+	if err != nil {
+		fmt.Errorf("CNI Genie Error while unsetting env variable CNI_IFNAME: %v\n", err)
+	}
 	rtConf, err := runtimeConf(cniArgs, intfName)
 	if err != nil {
 		return nil, fmt.Errorf("CNI Genie couldn't convert cniArgs to RuntimeConf: %v\n", err)
