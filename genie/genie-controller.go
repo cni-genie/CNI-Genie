@@ -52,6 +52,8 @@ const (
 	// ConfFilePermission specifies the default permission for conf file
 	ConfFilePermission                 os.FileMode = 0644
 	MultiIPPreferencesAnnotationFormat             = `{"multi_entry": 0,"ips": {"": {"ip": "","interface": ""}}}`
+	// SupportedPlugins lists the plugins supported by Genie
+	SupportedPlugins = "bridge, calico, canal, flannel, macvlan, Romana, sriov, weave"
 )
 
 // PopulateCNIArgs wraps skel.CmdArgs into Genie's native CNIArgs format.
@@ -125,7 +127,7 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 		}
 		// fetches an IP from corresponding CNS IPAM and returns result object
 		result, err = addNetwork(intfName, pluginElement, cniArgs)
-		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork err *** %v result***  %v\n", err, result)
+		fmt.Fprintf(os.Stderr, "CNI Genie addNetwork err *** %v; result***  %v\n", err, result)
 		if err != nil {
 			newErr = err
 		}
@@ -458,7 +460,7 @@ func ParseCNIConfFromFile(filename string) (*libcni.NetworkConfigList, error) {
 func checkPluginBinary(cniName string) error {
 	binaries, err := ioutil.ReadDir(DefaultPluginDir)
 	if err != nil {
-		return fmt.Errorf("CNI Genie Error while checking binary file for plugin %s: %v", cniName, err)
+		return fmt.Errorf("Error while checking binary file for plugin %s: %v", cniName, err)
 	}
 
 	for _, bin := range binaries {
@@ -466,20 +468,20 @@ func checkPluginBinary(cniName string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan, sriov)", cniName)
+	return fmt.Errorf("Corresponding binary for user requested plugin (%s) is not present in plugin directory (%s)", cniName, DefaultPluginDir)
 }
 
 // placeConfFile creates a conf file in the specified directory path
 func placeConfFile(obj interface{}, cniName string) (string, []byte, error) {
 	dataBytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
-		return "", nil, fmt.Errorf("CNI Genie Error while marshalling configuration object for plugin %s: %v", cniName, err)
+		return "", nil, fmt.Errorf("Error while marshalling configuration object for plugin %s: %v", cniName, err)
 	}
 
 	confFile := fmt.Sprintf(DefaultNetDir+"/"+"10-%s"+".conf", cniName)
 	err = ioutil.WriteFile(confFile, dataBytes, ConfFilePermission)
 	if err != nil {
-		return "", nil, fmt.Errorf("CNI Genie Error while writing default conf file for plugin %s: %v", cniName, err)
+		return "", nil, fmt.Errorf("Error while writing default conf file for plugin %s: %v", cniName, err)
 	}
 	return confFile, dataBytes, nil
 }
@@ -504,7 +506,7 @@ func createConfIfBinaryExists(cniName string) (*libcni.NetworkConfigList, error)
 		pluginObj = plugins.GetSriovConfig()
 		break
 	default:
-		return nil, fmt.Errorf("CNI Genie Error user requested for unsupported plugin type %s. Only supported are (Romana, weave, canal, calico, flannel, bridge, macvlan, sriov)", cniName)
+		return nil, fmt.Errorf("Configuration file is missing from cni directory (%s) for user requested plugin: %s", DefaultNetDir, cniName)
 	}
 
 	confFile, confBytes, err := placeConfFile(&pluginObj, cniName)
@@ -562,7 +564,7 @@ func addNetwork(intfName string, pluginInfo utils.PluginInfo, cniArgs utils.CNIA
 	var result types.Result
 	var err error
 
-	cniName := pluginInfo.PluginName
+	cniName := strings.TrimSpace(pluginInfo.PluginName)
 	fmt.Fprintf(os.Stderr, "CNI Genie cniName=%v intfName =%v\n", cniName, intfName)
 
 	cniConfig := libcni.CNIConfig{Path: []string{DefaultPluginDir}}
@@ -575,14 +577,16 @@ func addNetwork(intfName string, pluginInfo utils.PluginInfo, cniArgs utils.CNIA
 
 	sort.Strings(files)
 	var cniType string
+	foundConfFile := false
 	var netConfigList *libcni.NetworkConfigList
 	for _, confFile := range files {
-		if strings.Contains(confFile, cniName) && cniName != "" {
+		if strings.Contains(confFile, "-"+cniName+".") && cniName != "" {
+			foundConfFile = true
 			// Get the configuration info from the file. If the file does not
 			// contain valid conf, then skip it and check for another
 			confFromFile, err := ParseCNIConfFromFile(confFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file %s= %v\n", confFile, err)
+				fmt.Fprintf(os.Stderr, "CNI Genie Error parsing CNI config file (%s) for user requested plugin (%s): %v\n", confFile, pluginInfo.PluginName, err)
 				continue
 			}
 			cniType = confFromFile.Plugins[0].Network.Type
@@ -592,14 +596,30 @@ func addNetwork(intfName string, pluginInfo utils.PluginInfo, cniArgs utils.CNIA
 		}
 	}
 
-	// If corresponding conf file is not present, then check for the
+	// If corresponding valid conf file is not present, then check for the
 	// corresponding binary and create a default conf file if binary is present
 	if netConfigList == nil {
-		netConfigList, err = createConfIfBinaryExists(cniName)
-		if err != nil {
-			return nil, err
+		if foundConfFile == false {
+			supportedPlugins := strings.Split(SupportedPlugins, ",")
+			var cnt int
+			for _, plugin := range supportedPlugins {
+				if cniName == strings.TrimSpace(plugin) {
+					break
+				}
+				cnt++
+			}
+			if cnt >= len(supportedPlugins) {
+				return nil, fmt.Errorf("User requested for unsupported plugin type %s. Only supported are %s", cniName, SupportedPlugins)
+			}
+
+			netConfigList, err = createConfIfBinaryExists(cniName)
+			if err != nil {
+				return nil, err
+			}
+			cniType = cniName
+		} else {
+			return nil, fmt.Errorf("Unable to find a valid configuration file for user requested plugin: %s", pluginInfo.PluginName)
 		}
-		cniType = cniName
 	}
 
 	if pluginInfo.Subnet != "" {
@@ -613,7 +633,7 @@ func addNetwork(intfName string, pluginInfo utils.PluginInfo, cniArgs utils.CNIA
 	fmt.Fprintf(os.Stderr, "CNI Genie cni type= %s\n", cniType)
 	err = os.Unsetenv("CNI_IFNAME")
 	if err != nil {
-		fmt.Errorf("CNI Genie Error while unsetting env variable CNI_IFNAME: %v\n", err)
+		fmt.Fprintf(os.Stderr, "CNI Genie Error while unsetting env variable CNI_IFNAME: %v\n", err)
 	}
 	rtConf, err := runtimeConf(cniArgs, intfName)
 	if err != nil {
@@ -645,8 +665,9 @@ func deleteNetwork(intfName string, cniName string, cniArgs utils.CNIArgs) error
 		return fmt.Errorf("No networks found in %s", DefaultNetDir)
 	}
 	sort.Strings(files)
+	cniName = strings.TrimSpace(cniName)
 	for _, confFile := range files {
-		if strings.Contains(confFile, cniName) && cniName != "" {
+		if strings.Contains(confFile, "-"+cniName+".") && cniName != "" {
 			confFromFile, err := ParseCNIConfFromFile(confFile)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "CNI Genie Error loading CNI config file =%v\n", confFile, err)
