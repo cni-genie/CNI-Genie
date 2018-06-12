@@ -129,17 +129,20 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 		if err != nil {
 			newErr = err
 		}
-		endResult, err = mergeWithResult(result, endResult)
-		if err != nil {
-			newErr = err
-		}
 
-		/* If pod has only one ip it will be shown as part of pod ip hence multi ip preference is not needed*/
-		if noOfIps > 1 {
-			// Update pod definition with IPs "multi-ip-preferences"
-			multiIPPrefAnnot, err = UpdatePodDefinition(intfName, i+1, result, multiIPPrefAnnot, kubeClient, k8sArgs)
+		if result != nil {
+			endResult, err = mergeWithResult(result, endResult)
 			if err != nil {
 				newErr = err
+			}
+
+			/* If pod has only one ip it will be shown as part of pod ip hence multi ip preference is not needed*/
+			if noOfIps > 1 {
+				// Update pod definition with IPs "multi-ip-preferences"
+				multiIPPrefAnnot, err = UpdatePodDefinition(intfName, i+1, result, multiIPPrefAnnot, kubeClient, k8sArgs)
+				if err != nil {
+					newErr = err
+				}
 			}
 		}
 	}
