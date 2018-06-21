@@ -45,22 +45,24 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 
 [Watch multi-NICs per 'pod' demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-ips/README.md#feature-2-extension-cni-genie-multiple-ip-addresses-per-pod) (IP addresses assigned not only to the container, but also to the Pod)
 
-
 3. The user can leave the CNI plugin selection to CNI-Genie. CNI-Genie watches the Key Performance Indicator (KPI) that is of interest to the user and [selects the CNI plugin](docs/smart-cni-genie/README.md), accordingly.
     - CNI Genie watches KPI(s) of interest for existing CNI plugins, e.g., occupancy rate, number of subnets, latency, bandwidth
 
 [Watch Smart CNI Plugin Selection demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/smart-cni-genie/README.md#demo)
 
 
-4. Network isolation, i.e.,
+4. [Default plugin support](docs/default-plugin/README.md). Another useful feature from genie. Using this, we can ensure to get ip address(es) for a pod by selecting default set of plugins
+
+
+5. Network isolation, i.e.,
     - Dedicated 'physical' network for a tenant
     - Isolated 'logical' networks for different tenants on a shared 'physical'network
 
 
-5. [CNI-Genie network policy engine](docs/network-policy/README.md) for network level ACLs
+6. [CNI-Genie network policy engine](docs/network-policy/README.md) for network level ACLs
 
 
-6. Real-time switching between different (physical or logical) networks for a given workload. This allows for
+7. Real-time switching between different (physical or logical) networks for a given workload. This allows for
     - Price minimization: dynamically switching workload to a cheaper network as network prices change    
     - Maximizing network utilization: dynamically switching workload to the less congested network at a threshold
     
