@@ -1,6 +1,6 @@
-# Feature 5: CNI-Genie "Default Plugin Selection"
+# Feature 4: CNI-Genie "Default Plugin Selection"
 
-# Background
+# Usecase
 
 There are many cases/user scenarios where we want pod to have ip(s) from a default network which we choose. For this case, CNI Genie provides a very useful default plugin support feature.
 For using this feature, we can update the genie conf file to set the plugin of our choice as default plugin
