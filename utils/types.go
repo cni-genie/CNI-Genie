@@ -118,6 +118,7 @@ type K8sArgs struct {
 	K8S_POD_NAME               types.UnmarshallableString
 	K8S_POD_NAMESPACE          types.UnmarshallableString
 	K8S_POD_INFRA_CONTAINER_ID types.UnmarshallableString
+	K8S_ANNOT                  types.UnmarshallableString
 }
 
 // Temporary/alpha structures to support multiple ip addresses within Pod.
