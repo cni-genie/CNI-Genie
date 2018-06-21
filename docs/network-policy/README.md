@@ -1,7 +1,7 @@
 ## You can find here our [existing & future features covered in CNI-Genie](../CNIGenieFeatureSet.md)
 
-# Feature 4: CNI-Genie "Network Policy Engine"
-NOTE: this feature has not been implemented yet!
+# Feature 6: CNI-Genie "Network Policy Engine"
+NOTE: This feature is currently under implementation.
 
 ## Use Case
 
