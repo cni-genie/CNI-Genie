@@ -50,7 +50,8 @@ const (
 	// DefaultPluginDir specifies the default directory path for cni binary files
 	DefaultPluginDir = "/opt/cni/bin"
 	// ConfFilePermission specifies the default permission for conf file
-	ConfFilePermission os.FileMode = 0644
+	ConfFilePermission                 os.FileMode = 0644
+	MultiIPPreferencesAnnotationFormat             = `{"multi_entry": 0,"ips": {"": {"ip": "","interface": ""}}}`
 )
 
 // PopulateCNIArgs wraps skel.CmdArgs into Genie's native CNIArgs format.
@@ -111,14 +112,11 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 		return nil, fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
 	}
 
-	// parse pod annotations for "multi-ip-preferences"
-	// eg:
-	//   multi-ip-preferences : |
-	//       { "multi-entry": 0, "ips": {"":{"ip":"", "interfaces":""}}}
-	multiIPPrefAnnot := ParsePodAnnotationsForMultiIPPrefs(kubeClient, k8sArgs)
+	multiIPPrefAnnot := MultiIPPreferencesAnnotationFormat
 
 	var newErr error
 	var intfName string
+	noOfIps := len(annots)
 	for i, pluginElement := range annots {
 		if pluginElement.IfName != "" {
 			intfName = pluginElement.IfName
@@ -135,10 +133,14 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) (types.Result, err
 		if err != nil {
 			newErr = err
 		}
-		// Update pod definition with IPs "multi-ip-preferences"
-		multiIPPrefAnnot, err = UpdatePodDefinition(intfName, result, multiIPPrefAnnot, kubeClient, k8sArgs)
-		if err != nil {
-			newErr = err
+
+		/* If pod has only one ip it will be shown as part of pod ip hence multi ip preference is not needed*/
+		if noOfIps > 1 {
+			// Update pod definition with IPs "multi-ip-preferences"
+			multiIPPrefAnnot, err = UpdatePodDefinition(intfName, i+1, result, multiIPPrefAnnot, kubeClient, k8sArgs)
+			if err != nil {
+				newErr = err
+			}
 		}
 	}
 	if newErr != nil {
@@ -201,13 +203,8 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.NetConf) error {
 // different configured networking solutions. It is also used in "nocni"
 // case where ideal network has been chosen for the pod. Pod annotation
 // in this case will update with CNS that's chosen at run time.
-func UpdatePodDefinition(intfName string, result types.Result, multiIPPrefAnnot string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) (string, error) {
+func UpdatePodDefinition(intfName string, ipIndex int, result types.Result, multiIPPrefAnnot string, client *kubernetes.Clientset, k8sArgs utils.K8sArgs) (string, error) {
 	var multiIPPreferences utils.MultiIPPreferences
-
-	if multiIPPrefAnnot == "" {
-		fmt.Fprintf(os.Stderr, "CNI Genie No multi-ip-preferences annotation\n")
-		return multiIPPrefAnnot, nil
-	}
 
 	if err := json.Unmarshal([]byte(multiIPPrefAnnot), &multiIPPreferences); err != nil {
 		fmt.Errorf("CNI Genie Error parsing MultiIPPreferencesAnnotation = %s\n", err)
@@ -218,9 +215,8 @@ func UpdatePodDefinition(intfName string, result types.Result, multiIPPrefAnnot 
 		return multiIPPrefAnnot, fmt.Errorf("CNI Genie Error when converting result to current version = %s", err)
 	}
 
-	intfId, _ := strconv.Atoi(strings.Split(intfName, "eth")[1])
 	multiIPPreferences.MultiEntry = multiIPPreferences.MultiEntry + 1
-	multiIPPreferences.Ips["ip"+strconv.Itoa(intfId+1)] =
+	multiIPPreferences.Ips["ip"+strconv.Itoa(ipIndex)] =
 		utils.IPAddressPreferences{currResult.IPs[0].Address.IP.String(), intfName}
 
 	tmpMultiIPPreferences, err := json.Marshal(&multiIPPreferences)
