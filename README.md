@@ -6,7 +6,7 @@ CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kuber
 3. 'specialized' CNI plugins, e.g., [SR-IOV](https://github.com/hustcat/sriov-cni), DPDK (work-in-progress)
 4. any generic CNI plugin of choice installed on the host
 
-Without CNI-Genie, the orchestrator is bound to only a single CNI plugin. E.g., for the case of Kubernetes, without CNI-Genie, kubelet is bound to only a signle CNI plugin passed to kubelet on start. CNI-Genie allows for the co-existance of multiple CNI plugins  in runtime. 
+Without CNI-Genie, the orchestrator is bound to only a single CNI plugin. E.g., for the case of Kubernetes, without CNI-Genie, kubelet is bound to only a single CNI plugin passed to kubelet on start. CNI-Genie allows for the co-existance of multiple CNI plugins  in runtime. 
 
 [![Build Status](https://travis-ci.org/Huawei-PaaS/CNI-Genie.svg)](https://travis-ci.org/Huawei-PaaS/CNI-Genie)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Huawei-PaaS/CNI-Genie)](https://goreportcard.com/report/github.com/Huawei-PaaS/CNI-Genie)
