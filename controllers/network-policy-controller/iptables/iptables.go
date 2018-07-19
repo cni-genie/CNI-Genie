@@ -20,6 +20,7 @@ import (
 	"github.com/golang/glog"
 	"strconv"
 	"strings"
+	"errors"
 )
 
 const (
@@ -41,6 +42,12 @@ func ExitStatus(err error) int {
 func CreateIptableChainName(prefix, suffix string) string {
 	m := md5.Sum([]byte(suffix))
 	return (prefix + fmt.Sprintf("%x", m))[:26]
+}
+
+func CreatePolicyChainName(name, namespace, args string) string {
+	policyChain := CreateIptableChainName("", name + namespace)[:10]
+	nwPolicyChainName := CreateIptableChainName(GeniePolicyPrefix + policyChain + "-", args)
+	return nwPolicyChainName
 }
 
 // CreateBaseChain creates the base policy chain
@@ -87,8 +94,8 @@ func (i *IpTables) ExistsChain(chain string) bool {
 }
 
 // AddPolicyChain adds a policy specific chain
-func (i *IpTables) AddPolicyChain(name, namespace string) (string, error) {
-	nwPolicyChainName := CreateIptableChainName(GeniePolicyPrefix, name+namespace)
+func (i *IpTables) AddPolicyChain(name, namespace, nwSelector string) (string, error) {
+	nwPolicyChainName := CreatePolicyChainName(name, namespace, nwSelector)
 
 	err := i.ClearChain(FilterTable, nwPolicyChainName)
 	if err != nil {
@@ -191,35 +198,80 @@ func (i *IpTables) InsertRule(chain string, pos int, args []string) error {
 
 // DeleteNetworkChainRule deletes a rule from network chain
 // and also deletes the chain if the rule was the last one specifying policy
-func (i *IpTables) DeleteNetworkChainRule(nwChain, rule string) error {
+func (i *IpTables) DeleteNetworkChainRule(nwChain string, rules []string) ([]string, error) {
 	nwChainRules, err := i.List(FilterTable, nwChain)
 	if err != nil {
-		return fmt.Errorf("Error listing rules for network chain (%s): %v", nwChain, err)
+		return nil, fmt.Errorf("Error listing rules for network chain (%s): %v", nwChain, err)
 	}
-
-	var cnt int
-	for pos, r := range nwChainRules {
-		if strings.Contains(r, rule) {
-			err = i.Delete(FilterTable, nwChain, strconv.Itoa(pos))
-			if err != nil {
-				glog.Errorf("Error deleting rule (%s) from network chain (%s): %v", rule, nwChain, err)
+	glog.V(6).Infof("Network chain rules for network chain %s: %v", nwChain, nwChainRules)
+	policyRules := make(map[string]map[string]int)
+	for pos, rule := range nwChainRules {
+		if strings.Contains(rule, GeniePolicyPrefix) {
+			rule = rule[strings.LastIndex(rule, " ") + 1:]
+			lastindex := strings.LastIndex(rule, "-")
+			if policyRules[rule[:lastindex + 1]] == nil {
+				policyRules[rule[:lastindex + 1]] = make(map[string]int)
 			}
-			continue
+			policyRules[rule[:lastindex + 1]][rule[lastindex + 1:]] = pos
 		}
-
-		if cnt < 1 && strings.Contains(r, GeniePolicyPrefix) {
-			cnt++
+	}
+	glog.V(6).Infof("Policy rules map with policy rule positions: %v", policyRules)
+	rulesDeleted := make([]string, 0)
+	var errmsg string
+	cnt := 0
+	lastPos := 0
+	for _, r := range rules {
+		glog.V(4).Infof("Policy rule to be removed from network chain %s is %s", nwChain, r)
+		policy := r[:strings.LastIndex(r, "-")+1]
+		if policyRules[policy] != nil {
+			selector := r[strings.LastIndex(r, "-")+1:]
+			if policyRules[policy][selector] != 0 {
+				delPos := policyRules[policy][selector]
+				if delPos > lastPos {
+					delPos = delPos - cnt
+				}
+				glog.V(6).Infof("Deleting rule (%s) from network chain (%s): position: %s", r, nwChain, delPos)
+				err = i.Delete(FilterTable, nwChain, strconv.Itoa(delPos))
+				if err != nil {
+					errmsg = errmsg + fmt.Sprintf("Error deleting rule (%s) from network chain (%s): %v;\t", policy + selector, nwChain, err)
+				} else {
+					cnt++
+					lastPos = delPos
+					rulesDeleted = append(rulesDeleted, policy + selector)
+				}
+			} else if r == policy {
+				for s, delPos := range policyRules[policy] {
+					if delPos > lastPos {
+						delPos = delPos - cnt
+					}
+					glog.V(6).Infof("Deleting rule (%s) from network chain (%s): position: %s", r, nwChain, delPos)
+					err = i.Delete(FilterTable, nwChain, strconv.Itoa(delPos))
+					if err != nil {
+						errmsg = errmsg + fmt.Sprintf("Error deleting rule (%s) from network chain (%s): %v;\t", policy + s, nwChain, err)
+					} else {
+						cnt++
+						lastPos = delPos
+						rulesDeleted = append(rulesDeleted, policy + s)
+					}
+				}
+			}
 		}
 	}
 
-	if cnt == 0 {
+	if cnt >= len(nwChainRules) - 2 {
+		glog.V(4).Infof("Deleing network chain %s", nwChain)
 		err = i.DeleteNetworkChain(nwChain)
 		if err != nil {
-			return fmt.Errorf("Error deleting network chain (%s): %v", nwChain, err)
+			errmsg = errmsg + fmt.Sprintf("Error deleting network chain (%s): %v;\t", nwChain, err)
 		}
 	}
 
-	return nil
+	if errmsg == "" {
+		return rulesDeleted, nil
+	} else {
+		return rulesDeleted, errors.New(errmsg)
+	}
+
 }
 
 // DeleteIptableChain deletes a chain in the given table
