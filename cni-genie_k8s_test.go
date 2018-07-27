@@ -6,10 +6,10 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"math/rand"
@@ -487,6 +487,138 @@ var _ = Describe("CNIGenie", func() {
 				By("Waiting 5 seconds")
 				time.Sleep(time.Duration(5 * time.Second))
 				By("Check for sriov pod deletion")
+				_, err = clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
+	})
+
+	Describe("Verify default plugin case : pod with no annotation attributes", func() {
+		glog.Info("Inside default plugin case : pod with no annotation attributes")
+		Context("using cni-genie for verifying default plugin case : pod with no annotation attributes", func() {
+			name := fmt.Sprintf("nginx-pod-no-annotation-%d", rand.Uint32())
+
+			FIt("should succeed default(weave) networking for pod", func() {
+				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: name,
+						//Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the pod to have running status with default plugin(weave)")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
+				pod, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				glog.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the pod now...")
+				err = clientset.CoreV1().Pods(TEST_NAMESPACE).Delete(name, &metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for pod deletion")
+				_, err = clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
+	})
+
+	Describe("Verify default plugin case : pod with non cni annotations", func() {
+		glog.Info("Inside default plugin case : pod with non cni annotations")
+		Context("using cni-genie for verifying default plugin case : pod with non cni annotations", func() {
+			name := fmt.Sprintf("nginx-pod-non-cni-annotation-%d", rand.Uint32())
+
+			FIt("should succeed default(weave) networking for pod", func() {
+				annots := make(map[string]string)
+				annots["build"] = "two"
+				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        name,
+						Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the pod to have running status with default plugin(weave)")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
+				pod, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				glog.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the pod now...")
+				err = clientset.CoreV1().Pods(TEST_NAMESPACE).Delete(name, &metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for pod deletion")
+				_, err = clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
+	})
+
+	Describe("Verify default plugin case : pod with blank annotation field", func() {
+		glog.Info("Inside default plugin case : pod with blank annotation field")
+		Context("using cni-genie for verifying default plugin case : pod with blank annotation field", func() {
+			name := fmt.Sprintf("nginx-pod-blank-annotation-%d", rand.Uint32())
+
+			FIt("should succeed default(weave) networking for pod", func() {
+				annots := make(map[string]string)
+				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        name,
+						Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the pod to have running status with default plugin(weave)")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
+				pod, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				glog.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the pod now...")
+				err = clientset.CoreV1().Pods(TEST_NAMESPACE).Delete(name, &metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for pod deletion")
 				_, err = clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
 				if err != nil && errors.IsNotFound(err) {
 					//do nothing pod has already been deleted
