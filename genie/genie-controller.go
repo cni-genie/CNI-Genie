@@ -398,7 +398,7 @@ func parseCNIAnnotations(annot map[string]string, client *kubernetes.Clientset, 
 	} else {
 		glog.V(6).Info("Inside no cni annotation, calling cAdvisor client to retrieve ideal network solution")
 		//TODO (Kaveh): Get this cAdvisor URL from genie conf file
-		cns, err := GetCNSOrderByNetworkBandwith("http://127.0.0.1:4194")
+		cns, err := GetCNSOrderByNetworkBandwith(conf)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie GetCNSOrderByNetworkBandwith err= %v\n", err)
 			return finalPluginInfos, fmt.Errorf("CNI Genie failed to retrieve CNS list from cAdvisor = %v", err)

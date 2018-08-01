@@ -53,6 +53,12 @@ Install_Calico() {
   fi
 }
 
+# CAdvisor will be used to get network usage statistics to support smart plugin selection
+Install_CAdvisor() {
+  docker rm $(docker ps -q -f status=exited)
+  sudo docker run --volume=/:/rootfs:ro --volume=/var/run:/var/run:rw --volume=/sys:/sys:ro --volume=/var/lib/docker/:/var/lib/docker:ro --publish=4194:4194 --detach=true --name=cadvisor google/cadvisor:latest --logtostderr --port=4194
+}
+
 Delete_AllPlugins() {
   kubectl delete -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
   kubectl delete -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
@@ -68,6 +74,7 @@ Plugins_CNI()
   Install_Weave
   Install_Romana
   Install_Calico
+  Install_CAdvisor
   while [ $elapsedSeconds -lt $maxWaitSeconds ]
   do
     if [ $isFlannelUp == false ]; then

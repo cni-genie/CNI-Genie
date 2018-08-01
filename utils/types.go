@@ -109,6 +109,9 @@ type NetConf struct {
 
 	// CNI-Genie default plugin
 	DefaultPlugin string `json:"default_plugin"`
+
+	// Address to reach at cadvisor. By default, http://127.0.0.1:4194 is used as CAdvisor address
+	CAdvisorAddr string `json:"cAdvisor_address"`
 }
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes
@@ -140,8 +143,8 @@ type IPAddressPreferences struct {
 type LogicalNetwork struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	apiVersion string `json:"apiVersion"`
-	Spec struct {
+	apiVersion        string `json:"apiVersion"`
+	Spec              struct {
 		PhysicalNet string `json:"physicalNet,omitempty"`
 		SubSubnet   string `json:"sub_subnet,omitempty"`
 		Plugin      string `json:"plugin,omitempty"`
@@ -156,13 +159,12 @@ type LogicalNetworkList struct {
 	Items []LogicalNetwork `json:"items"`
 }
 
-
 //Details of physical network info for user pod
 type PhysicalNetwork struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	apiVersion string `json:"apiVersion"`
-	Spec struct {
+	apiVersion        string `json:"apiVersion"`
+	Spec              struct {
 		ReferNic     string `json:"refer_nic"`
 		SharedStatus struct {
 			Plugin          string `json:"plugin,omitempty"`
