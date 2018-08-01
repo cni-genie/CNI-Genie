@@ -108,6 +108,9 @@ type NetConf struct {
 
 	// CNI-Genie default plugin
 	DefaultPlugin string `json:"default_plugin"`
+
+	// Address to reach at cadvisor. By default, http://127.0.0.1:4194 is used as CAdvisor address
+	CAdvisorAddr string `json:"cAdvisor_address"`
 }
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes
