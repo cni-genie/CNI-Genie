@@ -580,19 +580,25 @@ func addNetwork(intfName string, pluginInfo utils.PluginInfo, cniArgs utils.CNIA
 	foundConfFile := false
 	var netConfigList *libcni.NetworkConfigList
 	for _, confFile := range files {
-		if strings.Contains(confFile, "-"+cniName+".") && cniName != "" {
-			foundConfFile = true
-			// Get the configuration info from the file. If the file does not
-			// contain valid conf, then skip it and check for another
-			confFromFile, err := ParseCNIConfFromFile(confFile)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "CNI Genie Error parsing CNI config file (%s) for user requested plugin (%s): %v\n", confFile, pluginInfo.PluginName, err)
-				continue
+		if cniName != "" {
+			// Check wether this conf file belongs to the requested plugin
+			// In conf file name, the plugin name should be followed by a '.' and
+			// should be preceded by either '-' or nothing
+			index := strings.Index(confFile, cniName)
+			if confFile[index+len(cniName)] == '.' && (index == 0 || (index > 0 && confFile[index-1] == '-')) {
+				foundConfFile = true
+				// Get the configuration info from the file. If the file does not
+				// contain valid conf, then skip it and check for another
+				confFromFile, err := ParseCNIConfFromFile(confFile)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "CNI Genie Error parsing CNI config file (%s) for user requested plugin (%s): %v\n", confFile, pluginInfo.PluginName, err)
+					continue
+				}
+				cniType = confFromFile.Plugins[0].Network.Type
+				fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%s\n", cniType)
+				netConfigList = confFromFile
+				break
 			}
-			cniType = confFromFile.Plugins[0].Network.Type
-			fmt.Fprintf(os.Stderr, "CNI Genie cniName file found!!!!!! confFromFile.Type =%s\n", cniType)
-			netConfigList = confFromFile
-			break
 		}
 	}
 
