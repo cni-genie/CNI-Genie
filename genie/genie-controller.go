@@ -791,8 +791,8 @@ func mergeWithResult(srcObj, dstObj types.Result) (types.Result, error) {
 		dst.Interfaces = append(dst.Interfaces, iface)
 	}
 	for _, ip := range src.IPs {
-		if ip.Interface != -1 {
-			ip.Interface += ifacesLength
+		if ip.Interface != nil && *(ip.Interface) != -1 {
+			ip.Interface = current.Int(*(ip.Interface) + ifacesLength)
 		}
 		dst.IPs = append(dst.IPs, ip)
 	}
@@ -855,7 +855,7 @@ func fixInterfaces(rObj types.Result) (types.Result, error) {
 	}
 	if len(result.Interfaces) == 0 {
 		for _, ip := range result.IPs {
-			ip.Interface = -1
+			ip.Interface = current.Int(-1)
 		}
 	}
 	return result, nil
