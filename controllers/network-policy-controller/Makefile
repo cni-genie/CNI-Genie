@@ -1,7 +1,8 @@
 GO_PATH = $(GOPATH)
 SRCFILES = $(wildcard *.go) 
 DEPS = $(SRCFILES) \
-       iptables/iptables.go 
+       iptables/iptables.go \
+       ipset/ipset.go 
 
 # Ensure that the dist directory is always created
 MAKE_SURE_DIST_EXIST := $(shell mkdir -p dist)
