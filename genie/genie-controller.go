@@ -51,7 +51,7 @@ const (
 	DefaultPluginDir = "/opt/cni/bin"
 	// ConfFilePermission specifies the default permission for conf file
 	ConfFilePermission                 os.FileMode = 0644
-	MultiIPPreferencesAnnotationFormat             = `{"multi_entry": 0,"ips": {"": {"ip": "","interface": ""}}}`
+	MultiIPPreferencesAnnotationFormat             = `{"multi_entry": 0,"ips": {}}`
 	// SupportedPlugins lists the plugins supported by Genie
 	SupportedPlugins = "bridge, calico, canal, flannel, macvlan, Romana, sriov, weave"
 )

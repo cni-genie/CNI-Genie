@@ -414,7 +414,7 @@ var _ = Describe("CNIGenie", func() {
 			FIt("should succeed multi ip preference for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "weave,flannel"
-				annots["multi-ip-preferences"] = `{"multi_entry": 0,"ips": {"": {"ip": "","interface": ""}}}`
+
 				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        name,
@@ -504,7 +504,7 @@ var _ = Describe("CNIGenie", func() {
 			FIt("should succeed multi ip preference for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "flannel,flannel"
-				annots["multi-ip-preferences"] = `{"multi_entry": 0,"ips": {"": {"ip": "","interface": ""}}}`
+
 				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        name,
@@ -550,7 +550,7 @@ var _ = Describe("CNIGenie", func() {
 			FIt("should succeed multi ip preference for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "flannel,weave,flannel"
-				annots["multi-ip-preferences"] = `{"multi_entry": 0,"ips": {"": {"ip": "","interface": ""}}}`
+
 				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        name,
