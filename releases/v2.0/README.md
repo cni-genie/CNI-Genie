@@ -61,4 +61,4 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 
 Note: CNI-Genie itself is NOT a routing solution! It makes a call to CNI plugins that provide routing service
 
-### More docs here [Getting started](docs/GettingStarted.md), [CNI-Genie Feature Set](docs/CNIGenieFeatureSet.md)
+### More docs here [Getting started](GettingStarted.md)

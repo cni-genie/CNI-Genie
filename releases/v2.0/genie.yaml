@@ -88,6 +88,7 @@ data:
         "romana_root": "http://__ROMANA_SERVICE_HOST__:__ROMANA_SERVICE_PORT__",
         "segment_label_name": "romanaSegment"
     }
+
 ---
 # Install CNI-Genie plugin on each slave node.
 kind: DaemonSet
@@ -128,7 +129,7 @@ spec:
         # Installs required 00-genie.conf and genie binary
         # on slave node.
         - name: install-cni
-          image: cnigenie/genie-plugin:latest
+          image: cnigenie/genie-plugin:v2.0
           imagePullPolicy: Always
           command: ["/launch.sh"]
           env:
