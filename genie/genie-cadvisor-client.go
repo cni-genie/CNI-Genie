@@ -188,6 +188,7 @@ Returns cAdvisor Address to collect network usage parameters
 	- conf : Netconf info having genie configurations
 */
 func getCAdvisorAddr(conf NetConf) string {
+	conf.CAdvisorAddr = strings.TrimSpace(conf.CAdvisorAddr)
 	if conf.CAdvisorAddr == "" {
 		return DefaultCAdvisorPath
 	}
