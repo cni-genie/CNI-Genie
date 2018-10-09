@@ -847,7 +847,7 @@ func updateRoutes(rObj types.Result) (types.Result, error) {
 
 // fixInterfaces fixes bad result returned by CNI plugin
 // some plugins(for example calico) return empty Interfaces list but
-// in IPConfig sets Interface index to 0. In such case it should be -1
+// in IPConfig sets Interface index to 0. In such case it should be nil
 func fixInterfaces(rObj types.Result) (types.Result, error) {
 	result, err := current.NewResultFromResult(rObj)
 	if err != nil {
@@ -855,7 +855,7 @@ func fixInterfaces(rObj types.Result) (types.Result, error) {
 	}
 	if len(result.Interfaces) == 0 {
 		for _, ip := range result.IPs {
-			ip.Interface = current.Int(-1)
+			ip.Interface = nil
 		}
 	}
 	return result, nil
