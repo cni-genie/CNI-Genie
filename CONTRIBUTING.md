@@ -1,5 +1,9 @@
 We always welcome contributions to our little experiment. Feel free to reach out to these folks:
 
-karun.chennuri@huawei.com
+lionwei1992@gmail.com
 
-kaveh.shafiee@huawei.com
+dujun5@huawei.com
+
+sushanthakumar@huawei.com
+
+Haibin.Michael.Xie@huawei.com
