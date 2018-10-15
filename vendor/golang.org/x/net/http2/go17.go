@@ -18,6 +18,8 @@ type contextContext interface {
 	context.Context
 }
 
+var errCanceled = context.Canceled
+
 func serverConnBaseContext(c net.Conn, opts *ServeConnOpts) (ctx contextContext, cancel func()) {
 	ctx, cancel = context.WithCancel(context.Background())
 	ctx = context.WithValue(ctx, http.LocalAddrContextKey, c.LocalAddr())
@@ -39,7 +41,22 @@ type clientTrace httptrace.ClientTrace
 
 func reqContext(r *http.Request) context.Context { return r.Context() }
 
+func (t *Transport) idleConnTimeout() time.Duration {
+	if t.t1 != nil {
+		return t.t1.IdleConnTimeout
+	}
+	return 0
+}
+
 func setResponseUncompressed(res *http.Response) { res.Uncompressed = true }
+
+func traceGetConn(req *http.Request, hostPort string) {
+	trace := httptrace.ContextClientTrace(req.Context())
+	if trace == nil || trace.GetConn == nil {
+		return
+	}
+	trace.GetConn(hostPort)
+}
 
 func traceGotConn(req *http.Request, cc *ClientConn) {
 	trace := httptrace.ContextClientTrace(req.Context())
@@ -91,4 +108,14 @@ func traceFirstResponseByte(trace *clientTrace) {
 func requestTrace(req *http.Request) *clientTrace {
 	trace := httptrace.ContextClientTrace(req.Context())
 	return (*clientTrace)(trace)
+}
+
+// Ping sends a PING frame to the server and waits for the ack.
+func (cc *ClientConn) Ping(ctx context.Context) error {
+	return cc.ping(ctx)
+}
+
+// Shutdown gracefully closes the client connection, waiting for running streams to complete.
+func (cc *ClientConn) Shutdown(ctx context.Context) error {
+	return cc.shutdown(ctx)
 }
