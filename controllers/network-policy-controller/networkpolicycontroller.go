@@ -346,19 +346,27 @@ func (npc *NetworkPolicyController) populatePolicyChain(name, namespace string, 
 	for nwSelector, peerNw := range networks {
 		nwSelector = strings.TrimSpace(nwSelector)
 		if nwSelector != "" {
+			selectorNw, err := npc.logicalNwLister.LogicalNetworks(namespace).Get(nwSelector)
+			if err != nil {
+				glog.Errorf("Error getting selector logical network (%s:%s): %v", namespace, nwSelector, err)
+				continue
+			}
 			nwPolicyChainName, err := npc.iptable.AddPolicyChain(name, namespace, nwSelector)
 			if err != nil {
 				return nil, fmt.Errorf("Error adding policy chain for network policy object (%s:%s): %v", name, namespace, err)
 			}
 			policyChainsAdded = append(policyChainsAdded, nwPolicyChainName)
 			for _, peer := range peerNw {
-				l, err := npc.logicalNwLister.LogicalNetworks(namespace).Get(strings.TrimSpace(peer))
+				if peer = strings.TrimSpace(peer); peer == "" {
+					continue
+				}
+				l, err := npc.logicalNwLister.LogicalNetworks(namespace).Get(peer)
 				if err != nil {
-					glog.Errorf("Error getting peer logical network (%s:%s): %v", namespace, name, err)
+					glog.Errorf("Error getting peer logical network (%s:%s): %v", namespace, peer, err)
 					continue
 				}
 
-				err = npc.insertPeerRule(nwPolicyChainName, l.Spec.SubSubnet)
+				err = npc.insertPeerRule(nwPolicyChainName, selectorNw.Spec.SubSubnet, l.Spec.SubSubnet)
 				if err != nil {
 					glog.Errorf("Error adding rule (subnet: %s) for peer network (%s:%s) in policy chain for policy object (%s:%s): %v", l.Spec.SubSubnet, namespace, peer, namespace, name, err)
 				}
@@ -532,13 +540,13 @@ func (npc *NetworkPolicyController) ListNetworkPolicies(lnwname string, namespac
 	return asSelector, asPeer, nil
 }
 
-func (npc *NetworkPolicyController) insertPeerRule(policyChain, subnet string) error {
-	rulespec := []string{"-s", subnet, "-j", "ACCEPT"}
+func (npc *NetworkPolicyController) insertPeerRule(policyChain, selector, peer string) error {
+	rulespec := []string{"-s", selector, "-d", peer, "-j", "ACCEPT"}
 	err := npc.iptable.AppendUnique(iptables.FilterTable, policyChain, rulespec...)
 	if err != nil {
 		return fmt.Errorf("Error adding rule (%v): %v", rulespec, err)
 	}
-	rulespec = []string{"-d", subnet, "-j", "ACCEPT"}
+	rulespec = []string{"-s", peer, "-d", selector, "-j", "ACCEPT"}
 	err = npc.iptable.AppendUnique(iptables.FilterTable, policyChain, rulespec...)
 	if err != nil {
 		return fmt.Errorf("Error adding rule (%v): %v", rulespec, err)
@@ -605,9 +613,14 @@ func (npc *NetworkPolicyController) handleLogicalNetworkAdd(name, namespace stri
 
 	if len(asPeer) > 0 {
 		for _, policy := range asPeer {
+			selectorNw, err := npc.logicalNwLister.LogicalNetworks(namespace).Get(policy.selector)
+			if err != nil {
+				glog.Errorf("Error while getting selector logical network (%s:%s) before adding peer rule: %v", namespace, policy.selector, err)
+				continue
+			}
 			policyChain := iptables.CreatePolicyChainName(policy.name, policy.namespace, policy.selector)
 			if npc.iptable.ExistsChain(policyChain) {
-				err = npc.insertPeerRule(policyChain, logicalNetwork.Spec.SubSubnet)
+				err = npc.insertPeerRule(policyChain, selectorNw.Spec.SubSubnet, logicalNetwork.Spec.SubSubnet)
 				if err != nil {
 					glog.Errorf("Error adding rule in policy chain (%s) for peer logical network (%s:%s): %v", policyChain, namespace, name, err)
 				}
