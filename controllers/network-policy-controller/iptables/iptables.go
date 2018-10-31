@@ -114,7 +114,13 @@ func (i *IpTables) AddNetworkChain(ln *utils.LogicalNetwork) (string, error) {
 		return "", err
 	}
 
-	args := []string{"-j", "REJECT"}
+	args := []string{"-s", ln.Spec.SubSubnet, "-d", ln.Spec.SubSubnet, "-j", "ACCEPT"}
+	err = i.AppendUnique(FilterTable, lnChain, args...)
+	if err != nil {
+		return "", err
+	}
+
+	args = []string{"-j", "REJECT"}
 	err = i.AppendUnique(FilterTable, lnChain, args...)
 	if err != nil {
 		return "", err
@@ -258,7 +264,7 @@ func (i *IpTables) DeleteNetworkChainRule(nwChain string, rules []string) ([]str
 		}
 	}
 
-	if cnt >= len(nwChainRules) - 2 {
+	if cnt >= len(nwChainRules) - 3 {
 		glog.V(4).Infof("Deleing network chain %s", nwChain)
 		err = i.DeleteNetworkChain(nwChain)
 		if err != nil {
