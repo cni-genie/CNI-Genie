@@ -71,27 +71,27 @@ type NetworkPolicy struct {
 }
 
 type AsSelector struct {
-	name string
+	name      string
 	namespace string
 }
 
 type AsPeer struct {
-	name string
+	name      string
 	namespace string
-	selector string
+	selector  string
 }
 
 type NetworkPolicyInfo struct {
 	AsSelector bool
-	AsPeer []string
+	AsPeer     []string
 }
 
 // NewNpcController returns a new network policy controller
 func NewNpcController(
-kubeclientset kubernetes.Interface,
-extclientset clientset.Interface,
-kubeInformerFactory kubeinformers.SharedInformerFactory,
-externalObjInformerFactory informers.SharedInformerFactory) *NetworkPolicyController {
+	kubeclientset kubernetes.Interface,
+	extclientset clientset.Interface,
+	kubeInformerFactory kubeinformers.SharedInformerFactory,
+	externalObjInformerFactory informers.SharedInformerFactory) *NetworkPolicyController {
 
 	networkPolicyInformer := kubeInformerFactory.Networking().V1().NetworkPolicies()
 	logicalNwInformer := externalObjInformerFactory.Alpha().V1().LogicalNetworks()
@@ -289,7 +289,7 @@ func unmarshalKeyActionJson(key string) (map[string]string, error) {
 	return keyaction, nil
 }
 
-func parsePeers (peers string) string {
+func parsePeers(peers string) string {
 	peer := strings.Split(peers, ",")
 	var ret string
 	for _, p := range peer {
@@ -332,7 +332,7 @@ func getNetworkInfoFromAnnotation(annotation, nwName string) (NetworkPolicyInfo,
 		peers := parsePeers(policyRule.PeerNetworks)
 		if nwName == policyRule.NetworkSelector && false == networkInfo.AsSelector {
 			networkInfo.AsSelector = true
-		} else if strings.Contains("," + peers + ",", "," + nwName + ",") {
+		} else if strings.Contains(","+peers+",", ","+nwName+",") {
 			networkInfo.AsPeer = append(networkInfo.AsPeer, strings.TrimSpace(policyRule.NetworkSelector))
 
 		}
@@ -404,7 +404,7 @@ func (npc *NetworkPolicyController) removePolicyChainEntries(policyChains []stri
 	policyChainsToDelete := make(map[string]bool)
 	for _, rule := range baseRules {
 		if strings.HasPrefix(rule, "-A") && strings.Contains(rule, iptables.GenieNetworkPrefix) {
-			lnChain := rule[strings.LastIndex(rule, " ") + 1:]
+			lnChain := rule[strings.LastIndex(rule, " ")+1:]
 			if nwChains[lnChain] == false {
 				nwChains[lnChain] = true
 				glog.V(4).Infof("Removing policy chain entries from network chain (%s)", lnChain)
@@ -420,7 +420,7 @@ func (npc *NetworkPolicyController) removePolicyChainEntries(policyChains []stri
 	}
 
 	glog.V(4).Infof("Policy chains to be deleted from iptable: %v", policyChainsToDelete)
-	for policyChain, _ := range policyChainsToDelete {
+	for policyChain := range policyChainsToDelete {
 		err := npc.iptable.DeleteIptableChain(iptables.FilterTable, policyChain)
 		if err != nil {
 			glog.Errorf("Error deleting policy chain (%s) from iptable: %v", policyChain, err)
@@ -479,9 +479,9 @@ func (npc *NetworkPolicyController) handleNetworkPolicyUpdate(policyName, policy
 	plcChainFmt = plcChainFmt[:strings.LastIndex(plcChainFmt, "-")+1]
 	newChains := "," + strings.Join(policyChains, ",") + ","
 
-	policyChainsToRemove := make([]string,0)
+	policyChainsToRemove := make([]string, 0)
 	for _, chain := range iptableChains {
-		if strings.Contains(chain, plcChainFmt) && !strings.Contains(newChains, "," + chain + ","){
+		if strings.Contains(chain, plcChainFmt) && !strings.Contains(newChains, ","+chain+",") {
 			policyChainsToRemove = append(policyChainsToRemove, chain)
 
 		}
@@ -525,7 +525,6 @@ func (npc *NetworkPolicyController) ListNetworkPolicies(lnwname string, namespac
 			glog.Errorf("Error parsing logical network info from annotation: %v", err)
 			continue
 		}
-
 
 		if networkInfo.AsSelector == true {
 			asSelector = append(asSelector, AsSelector{name: policy.Name, namespace: policy.Namespace})
