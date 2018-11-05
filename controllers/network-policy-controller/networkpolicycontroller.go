@@ -540,13 +540,13 @@ func (npc *NetworkPolicyController) ListNetworkPolicies(lnwname string, namespac
 	return asSelector, asPeer, nil
 }
 
-func (npc *NetworkPolicyController) insertPeerRule(policyChain, selector, peer string) error {
-	rulespec := []string{"-s", selector, "-d", peer, "-j", "ACCEPT"}
+func (npc *NetworkPolicyController) insertPeerRule(policyChain, selectorSubnet, peerSubnet string) error {
+	rulespec := []string{"-s", selectorSubnet, "-d", peerSubnet, "-j", "ACCEPT"}
 	err := npc.iptable.AppendUnique(iptables.FilterTable, policyChain, rulespec...)
 	if err != nil {
 		return fmt.Errorf("Error adding rule (%v): %v", rulespec, err)
 	}
-	rulespec = []string{"-s", peer, "-d", selector, "-j", "ACCEPT"}
+	rulespec = []string{"-s", peerSubnet, "-d", selectorSubnet, "-j", "ACCEPT"}
 	err = npc.iptable.AppendUnique(iptables.FilterTable, policyChain, rulespec...)
 	if err != nil {
 		return fmt.Errorf("Error adding rule (%v): %v", rulespec, err)

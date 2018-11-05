@@ -29,6 +29,9 @@ const (
 	ForwardChain       = "FORWARD"
 	GeniePolicyPrefix  = "GnPlc-"
 	GenieNetworkPrefix = "GnNtk-"
+	// defaultRuleCountForNetworkChain specifies the number of rules present in a
+	// network chain when no policy chain rules are present in the network chain
+	defaultRuleCountForNetworkChain = 3
 )
 
 type IpTables struct {
@@ -264,7 +267,7 @@ func (i *IpTables) DeleteNetworkChainRule(nwChain string, rules []string) ([]str
 		}
 	}
 
-	if cnt >= len(nwChainRules) - 3 {
+	if cnt >= len(nwChainRules) - defaultRuleCountForNetworkChain {
 		glog.V(4).Infof("Deleing network chain %s", nwChain)
 		err = i.DeleteNetworkChain(nwChain)
 		if err != nil {
