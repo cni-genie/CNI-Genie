@@ -56,6 +56,8 @@ const (
 	SupportedPlugins = "bridge, calico, canal, flannel, macvlan, Romana, sriov, weave"
 	// DefaultIfNamePrefix specifies the default prefix to be used while generating interface names
 	DefaultIfNamePrefix = "eth"
+	// NetworkAttachmentDefinitionAnnot specifies the pod Network Attachment Selection Annotation
+	NetworkAttachmentDefinitionAnnot = "k8s.v1.cni.cncf.io/networks"
 )
 
 type SetStatus func(current.Result, string, string, interface{}) interface{}
@@ -116,17 +118,24 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.GenieConf) (types.Result, e
 	// parse pod annotations for cns types
 	// eg:
 	//    cni: "canal,weave"
+	var pluginInfoList []*utils.PluginInfo
 	var setStatus SetStatus
-	plugins, err := parseCNIAnnotations(podAnnot, kubeClient, k8sArgs, conf)
-	if err != nil {
-		return nil, fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
+	if networkCrdAnnot, ok := podAnnot[NetworkAttachmentDefinitionAnnot]; ok {
+		pluginInfoList, err = parseNetAttachDefAnnot(networkCrdAnnot, kubeClient, k8sArgs, DefaultNetDir)
+		if err != nil {
+			return nil, fmt.Errorf("CNI Genie error at parseNetAttachDefAnnot: %v", err)
+		}
+	} else {
+		pluginInfoList, err = parseCNIAnnotations(podAnnot, kubeClient, k8sArgs, conf)
+		if err != nil {
+			return nil, fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
+		}
+		if len(pluginInfoList) > 1 {
+			setStatus = setGenieStatus
+		}
 	}
 
-	if len(plugins) > 1 {
-		setStatus = setGenieStatus
-	}
-
-	result, status, err := addNetwork(plugins, cniArgs, setStatus)
+	result, status, err := addNetwork(pluginInfoList, cniArgs, setStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -170,12 +179,20 @@ func DeletePodNetwork(cniArgs utils.CNIArgs, conf utils.GenieConf) error {
 	// parse pod annotations for cns types
 	// eg:
 	//    cni: "canal,weave"
-	plugins, err := parseCNIAnnotations(podAnnot, kubeClient, k8sArgs, conf)
-	if err != nil {
-		return fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
+	var pluginInfoList []*utils.PluginInfo
+	if networkCrdAnnot, ok := podAnnot[NetworkAttachmentDefinitionAnnot]; ok {
+		pluginInfoList, err = parseNetAttachDefAnnot(networkCrdAnnot, kubeClient, k8sArgs, DefaultNetDir)
+		if err != nil {
+			return fmt.Errorf("CNI Genie error at parseNetAttachDefAnnot: %v", err)
+		}
+	} else {
+		pluginInfoList, err = parseCNIAnnotations(podAnnot, kubeClient, k8sArgs, conf)
+		if err != nil {
+			return fmt.Errorf("CNI Genie error at ParsePodAnnotations: %v", err)
+		}
 	}
 
-	return deleteNetwork(plugins, cniArgs)
+	return deleteNetwork(pluginInfoList, cniArgs)
 }
 
 func getReservedIfnames(pluginElems []*utils.PluginInfo) (map[int64]bool, error) {
