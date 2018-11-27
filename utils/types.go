@@ -19,8 +19,10 @@ import (
 	"net"
 	"time"
 
+	"github.com/containernetworking/cni/libcni"
 	"github.com/containernetworking/cni/pkg/types"
 	c "github.com/google/cadvisor/info/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ContainerInfoGenie struct {
@@ -70,45 +72,14 @@ type KubernetesConfig struct {
 	Kubeconfig string `json:"kubeconfig"`
 }
 
-// NetConf stores the common network config for Calico CNI plugin
-type NetConf struct {
-	CNIVersion     string                 `json:"cniVersion"`
-	Name           string                 `json:"name"`
-	Type           string                 `json:"type"`
-	IPAM           interface{}            `json:"ipam,omitempty"`
-	MTU            int                    `json:"mtu"`
-	Hostname       string                 `json:"hostname"`
-	DatastoreType  string                 `json:"datastore_type"`
-	EtcdAuthority  string                 `json:"etcd_authority"`
-	EtcdEndpoints  string                 `json:"etcd_endpoints"`
-	LogLevel       string                 `json:"log_level"`
-	Policy         PolicyConfig           `json:"policy"`
-	Kubernetes     KubernetesConfig       `json:"kubernetes"`
-	EtcdScheme     string                 `json:"etcd_scheme"`
-	EtcdKeyFile    string                 `json:"etcd_key_file"`
-	EtcdCertFile   string                 `json:"etcd_cert_file"`
-	EtcdCaCertFile string                 `json:"etcd_ca_cert_file"`
-	Delegate       map[string]interface{} `json:"delegate"`
-	CalicoSubnet   string                 `json:"calico_subnet"`
-	CanalSubnet    string                 `json:"canal_subnet"`
-	WeaveSubnet    string                 `json:"weave_subnet"`
-	Master         string                 `json:"master"`
-	Mode           string                 `json:"mode"`
-
-	Bridge           string `json:"bridge,omitempty"`
-	IsDefaultGateway bool   `json:"isDefaultGateway,omitempty"`
-	ForceAddress     bool   `json:"forceAddress,omitempty"`
-	IpMasq           bool   `json:"ipMasq,omitempty"`
-	HairpinMode      bool   `json:"hairpinMode,omitempty"`
-	IsGateway        bool   `json:"isGateway,omitempty"`
-
-	//added for romana
-	RomanaRoot       string `json:"romana_root"`
-	SegmentLabelName string `json:"segment_label_name"`
-
+// GenieConf describes cni-genie plugin configurations
+type GenieConf struct {
+	types.NetConf
+	Kubernetes KubernetesConfig `json:"kubernetes"`
+	Policy     PolicyConfig     `json:"policy"`
+	LogLevel   string           `json:"log_level"`
 	// CNI-Genie default plugin
 	DefaultPlugin string `json:"default_plugin"`
-
 	// Address to reach at cadvisor. By default, http://127.0.0.1:4194 is used as CAdvisor address
 	CAdvisorAddr string `json:"cAdvisor_address"`
 }
@@ -123,8 +94,6 @@ type K8sArgs struct {
 	K8S_ANNOT                  types.UnmarshallableString
 }
 
-// Temporary/alpha structures to support multiple ip addresses within Pod.
-
 // A set of preferences that can be added to Pod as a json-serialized annotation.
 // The preferences allow to express the number of ip addresses, ip addresses,
 // their corresponding interfaces within the Pod.
@@ -138,28 +107,30 @@ type IPAddressPreferences struct {
 	Interface string `json:"interface,omitempty"`
 }
 
-//Details of logical network info for user pod
+// LogicalNetwork describes the details of logical network info for user pod
 type LogicalNetwork struct {
-	apiVersion string `json:"apiVersion"`
-	Metadata   struct {
-		Name      string `json:"name"`
-		Namespace string `json:"namespace"`
-	} `json:"metadata"`
-	Spec struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              struct {
 		PhysicalNet string `json:"physicalNet,omitempty"`
 		SubSubnet   string `json:"sub_subnet,omitempty"`
 		Plugin      string `json:"plugin,omitempty"`
 	} `json:"spec"`
 }
 
-//Details of physical network info for user pod
+// LogicalNetworkList is a list of LogicalNetwork resource
+type LogicalNetworkList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []LogicalNetwork `json:"items"`
+}
+
+// PhysicalNetwork describes the details of physical network info for user pod
 type PhysicalNetwork struct {
-	apiVersion string `json:"apiVersion"`
-	Metadata   struct {
-		Name      string `json:"name"`
-		Namespace string `json:"namespace,omitempty"`
-	} `json:"metadata"`
-	Spec struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              struct {
 		ReferNic     string `json:"refer_nic"`
 		SharedStatus struct {
 			Plugin          string `json:"plugin,omitempty"`
@@ -169,10 +140,24 @@ type PhysicalNetwork struct {
 	} `json:"spec"`
 }
 
-//Details of plugin info for user pod
+// PhysicalNetworkList is a list of PhysicalNetwork resource
+type PhysicalNetworkList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []PhysicalNetwork `json:"items"`
+}
+
+type ValidateResult func(types.Result, interface{}) error
+
+// PluginInfo describes the details of plugin info for user pod
 type PluginInfo struct {
-	PluginName string
-	IfName     string
-	Subnet     string
-	Refer_nic  string
+	PluginName       string
+	IfName           string
+	Subnet           string
+	Refer_nic        string
+	Config           *libcni.NetworkConfigList
+	OptionalArgs     map[string]string
+	ValidationParams interface{}
+	ValidateRes      ValidateResult
 }

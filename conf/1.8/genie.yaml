@@ -105,24 +105,16 @@ spec:
     metadata:
       labels:
         k8s-app: genie
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: |
-          [
-            {
-              "key": "dedicated", 
-              "value": "master", 
-              "effect": "NoSchedule" 
-            },
-            {
-              "key": "CriticalAddonsOnly", 
-              "operator": "Exists"
-            }
-          ]
     spec:
       hostNetwork: true
       hostPID: true
       serviceAccountName: genie
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node.kubernetes.io/not-ready
+        effect: NoSchedule
+        operator: Exists
       containers:
         # Create a container with install.sh that 
         # Installs required 00-genie.conf and genie binary
