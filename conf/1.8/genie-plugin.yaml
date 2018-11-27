@@ -136,8 +136,8 @@ spec:
         # Installs required 00-genie.conf and genie binary
         # on slave node.
         - name: install-cni
-          image: quay.io/huawei-cni-genie/genie-plugin:latest 
-          imagePullPolicy: Always 
+          image: quay.io/huawei-cni-genie/genie-plugin:latest
+          imagePullPolicy: Always
           command: ["/launch.sh"]
           env:
             - name: CNI_NETWORK_CONFIG
