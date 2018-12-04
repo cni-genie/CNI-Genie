@@ -58,6 +58,8 @@ const (
 	DefaultIfNamePrefix = "eth"
 	// NetworkAttachmentDefinitionAnnot specifies the pod Network Attachment Selection Annotation
 	NetworkAttachmentDefinitionAnnot = "k8s.v1.cni.cncf.io/networks"
+	// NetworkAttachmentStatusAnnot specifies the network attachment status annotation in pod objent
+	NetworkAttachmentStatusAnnot = "k8s.v1.cni.cncf.io/network-status"
 )
 
 type SetStatus func(current.Result, string, string, interface{}) interface{}
@@ -120,11 +122,14 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.GenieConf) (types.Result, e
 	//    cni: "canal,weave"
 	var pluginInfoList []*utils.PluginInfo
 	var setStatus SetStatus
+	var statusAnnot string
 	if networkCrdAnnot, ok := podAnnot[NetworkAttachmentDefinitionAnnot]; ok {
 		pluginInfoList, err = parseNetAttachDefAnnot(networkCrdAnnot, kubeClient, k8sArgs, DefaultNetDir)
 		if err != nil {
 			return nil, fmt.Errorf("CNI Genie error at parseNetAttachDefAnnot: %v", err)
 		}
+		setStatus = setNetAttachStatus
+		statusAnnot = NetworkAttachmentStatusAnnot
 	} else {
 		pluginInfoList, err = parseCNIAnnotations(podAnnot, kubeClient, k8sArgs, conf)
 		if err != nil {
@@ -132,6 +137,7 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.GenieConf) (types.Result, e
 		}
 		if len(pluginInfoList) > 1 {
 			setStatus = setGenieStatus
+			statusAnnot = MultiIPPreferencesAnnotation
 		}
 	}
 
@@ -146,7 +152,7 @@ func AddPodNetwork(cniArgs utils.CNIArgs, conf utils.GenieConf) (types.Result, e
 	}
 
 	if bytes != nil {
-		err = UpdatePodDefinition(MultiIPPreferencesAnnotation, bytes, kubeClient, k8sArgs)
+		err = UpdatePodDefinition(statusAnnot, bytes, kubeClient, k8sArgs)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie error while setting pod status(%v): %v:\n", string(bytes), err)
 		}
