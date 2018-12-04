@@ -3,6 +3,7 @@ package genie
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Huawei-PaaS/CNI-Genie/networkcrd"
 	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"os"
@@ -18,14 +19,14 @@ func setGenieStatus(result current.Result, name, ifName string, currStatus inter
 	} else {
 		multiIPPreferences, ok = currStatus.(*utils.MultiIPPreferences)
 		if !ok {
-			fmt.Fprintf(os.Stderr, "CNI Genie in setGenieStatus unable to assert multiIPPreferences\n")
+			fmt.Fprintf(os.Stderr, "CNI Genie unable to assert multiIPPreferences\n")
 			return nil
 		}
 		multiIPPreferences.MultiEntry = multiIPPreferences.MultiEntry + 1
 	}
 
 	if len(result.IPs) == 0 {
-		fmt.Fprintf(os.Stderr, "CNI Genie in setGenieStatus no ip in result\n")
+		fmt.Fprintf(os.Stderr, "CNI Genie no ip in result\n")
 		return nil
 	}
 	multiIPPreferences.Ips["ip"+strconv.Itoa(int(multiIPPreferences.MultiEntry))] = utils.IPAddressPreferences{
@@ -33,6 +34,41 @@ func setGenieStatus(result current.Result, name, ifName string, currStatus inter
 		Interface: ifName,
 	}
 	return interface{}(multiIPPreferences)
+}
+
+func setNetAttachStatus(result current.Result, name, ifName string, currStatus interface{}) interface{} {
+	netAttachStatus := &[]networkcrd.NetworkStatus{}
+	var ok bool
+	if currStatus != nil {
+		netAttachStatus, ok = currStatus.(*[]networkcrd.NetworkStatus)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "CNI Genie unable to assert network attachment status\n")
+			return nil
+		}
+	}
+
+	status := networkcrd.NetworkStatus{}
+	for _, intf := range result.Interfaces {
+		if intf.Sandbox != "" {
+			status.Mac = intf.Mac
+		}
+	}
+
+	for _, ip := range result.IPs {
+		if ip.Version == "4" && ip.Address.IP.To4() != nil {
+			status.IPs = append(status.IPs, ip.Address.IP.String())
+		} else if ip.Version == "6" && ip.Address.IP.To16() != nil {
+			status.IPs = append(status.IPs, ip.Address.IP.String())
+		}
+	}
+
+	status.Name = name
+	status.Interface = ifName
+	status.DNS = result.DNS
+
+	*netAttachStatus = append(*netAttachStatus, status)
+
+	return interface{}(netAttachStatus)
 }
 
 func getStatusBytes(status interface{}) []byte {
@@ -43,8 +79,13 @@ func getStatusBytes(status interface{}) []byte {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CNI Genie error while marshalling status: %v\n", err)
 		}
+	} else if nwStatus, ok := status.(*[]networkcrd.NetworkStatus); ok {
+		bytes, err = json.MarshalIndent(nwStatus, "", " ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "CNI Genie error while marshalling network attachment status: %v\n", err)
+		}
 	} else {
-		fmt.Fprintf(os.Stderr, "CNI Genie unable to extract multi-ip preference info from status\n")
+		fmt.Fprintf(os.Stderr, "CNI Genie unable to extract status information\n")
 	}
 
 	return bytes
