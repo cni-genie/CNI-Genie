@@ -29,6 +29,13 @@ rules:
       - update
       - patch
   - apiGroups:
+      - "k8s.cni.cncf.io"
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - update
+  - apiGroups:
       - ""
     resources:
       - configmaps
@@ -158,18 +165,6 @@ spec:
         k8s-app: genie
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: |
-          [
-            {
-              "key": "dedicated",
-              "value": "master",
-              "effect": "NoSchedule"
-            },
-            {
-              "key": "CriticalAddonsOnly",
-              "operator": "Exists"
-            }
-          ]
     spec:
       hostNetwork: true
       hostPID: true
@@ -197,6 +192,12 @@ spec:
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node.kubernetes.io/not-ready
+        effect: NoSchedule
+        operator: Exists
       volumes:
         - name: cni-bin-dir
           hostPath:
@@ -224,6 +225,9 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      - key: node.kubernetes.io/not-ready
+        effect: NoSchedule
+        operator: Exists
       - key: CriticalAddonsOnly
         operator: Exists
       nodeSelector:
