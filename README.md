@@ -58,6 +58,8 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
     - Dedicated 'physical' network for a tenant
     - Isolated 'logical' networks for different tenants on a shared 'physical'network
 
+    Usecase : [Obtaining Pod Ip address from customized subnet](docs/network-isolation/README.md)
+
 
 Note: CNI-Genie itself is NOT a routing solution! It makes a call to CNI plugins that provide routing service
 
