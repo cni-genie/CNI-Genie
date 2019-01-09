@@ -38,6 +38,7 @@ func setGenieStatus(result current.Result, name, ifName string, currStatus inter
 
 func setNetAttachStatus(result current.Result, name, ifName string, currStatus interface{}) interface{} {
 	netAttachStatus := &[]networkcrd.NetworkStatus{}
+	status := networkcrd.NetworkStatus{}
 	var ok bool
 	if currStatus != nil {
 		netAttachStatus, ok = currStatus.(*[]networkcrd.NetworkStatus)
@@ -45,9 +46,10 @@ func setNetAttachStatus(result current.Result, name, ifName string, currStatus i
 			fmt.Fprintf(os.Stderr, "CNI Genie unable to assert network attachment status\n")
 			return nil
 		}
+	} else {
+		status.Default = true
 	}
 
-	status := networkcrd.NetworkStatus{}
 	for _, intf := range result.Interfaces {
 		if intf.Sandbox != "" {
 			status.Mac = intf.Mac

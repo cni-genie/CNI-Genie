@@ -10,14 +10,25 @@ import (
 	"strings"
 )
 
+const (
+	GenieConfFile = "00-genie.conf"
+)
+
 func parseNetAttachDefAnnot(annot string, kubeClient *kubernetes.Clientset, k8sArgs utils.K8sArgs, cniDir string) ([]*utils.PluginInfo, error) {
+	var pluginInfoList []*utils.PluginInfo
+	config, err := getClusterNetwork(cniDir)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(os.Stderr, "CNI Genie found default network for cluster: %s\n", config.Plugins[0].Network.Type)
+	pluginInfoList = append(pluginInfoList, &utils.PluginInfo{PluginName: config.Plugins[0].Network.Type, Config: config, IfName: DefaultIfNamePrefix + "0"})
+
 	networks, err := networkcrd.GetNetworkInfo(annot, string(k8sArgs.K8S_POD_NAMESPACE))
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing network selection annotation: %v", err)
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie network elements from network selection annotation: %+v\n", networks)
 
-	var pluginInfoList []*utils.PluginInfo
 	for _, netElem := range networks {
 		network, err := networkcrd.GetNetworkCRDObject(kubeClient, netElem.Name, netElem.Namespace)
 		if err != nil {
@@ -62,4 +73,34 @@ func getNetworkConfig(network *networkcrd.NetworkAttachmentDefinition, cniDir st
 	}
 
 	return config, nil
+}
+
+// getClusterNetwork gets the cluster wide default network based on the configuration
+// files present in cni directory. The first (in lexical order) valid config file
+// (excluding 00-genie.conf) will be treated as the configuration for cluster wide
+// default network. It will be assumed that the corresponding plugin executable is
+// is present in the plugin directory and the corresponding plugin service is running
+// (if required) in the cluster. If no conf/conflist file (other than 00-genie.conf)
+// is present in the directory, then network attachment will fail assuming non-readiness
+// of node.
+func getClusterNetwork(cniDir string) (*libcni.NetworkConfigList, error) {
+	files, err := getConfFiles(cniDir)
+	if err != nil {
+		return nil, fmt.Errorf("Error listing configuration files in cni directory (%s): %v", cniDir, err)
+	}
+
+	if len(files) <= 1 {
+		return nil, fmt.Errorf("No cni plugin has been installed on node.")
+	}
+	for _, file := range files {
+		if strings.Contains(file, GenieConfFile) {
+			continue
+		}
+		config, err := ParseCNIConfFromFile(file)
+		if err != nil {
+			continue
+		}
+		return config, nil
+	}
+	return nil, fmt.Errorf("Unable to select default cluster network. No valid configuration file present in cni directory.")
 }
