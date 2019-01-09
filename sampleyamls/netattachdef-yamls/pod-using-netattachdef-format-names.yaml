@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-netattachdef-flannel-weave
+  annotations:
+    k8s.v1.cni.cncf.io/networks: flannel@eth1, network/weavenet@eth5
+spec:
+  containers:
+    - name: key-value-store
+      image: nginx:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 80
+
