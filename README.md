@@ -60,6 +60,14 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 
     Usecase : [Obtaining Pod Ip address from customized subnet](docs/network-isolation/README.md)
 
+6. [CNI-Genie network policy engine](docs/network-policy/README.md) for network level ACLs
+
+
+7. Real-time switching between different (physical or logical) networks for a given workload. This allows for
+    - Price minimization: dynamically switching workload to a cheaper network as network prices change    
+    - Maximizing network utilization: dynamically switching workload to the less congested network at a threshold
+    
+    ![image](docs/network-switching.PNG)
 
 Note: CNI-Genie itself is NOT a routing solution! It makes a call to CNI plugins that provide routing service
 
