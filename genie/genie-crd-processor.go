@@ -106,12 +106,19 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 		}
 
 		if logicalNwInfo.Spec.PhysicalNet == "" {
-			return pluginInfoList, fmt.Errorf("CNI Genie failed to find physical network mapping in logical network %v, "+"namespace %v\n",
-				networkName, namespace)
+			if logicalNwInfo.Spec.Plugin != "" {
+				pluginInfo.PluginName = logicalNwInfo.Spec.Plugin
+			} else {
+				return pluginInfoList, fmt.Errorf("CNI Genie failed to find physical network mapping in logical network %v, "+"namespace %v\n",
+					networkName, namespace)
+			}
+		} else {
+			pluginInfo, err = GetPluginInfoFromPhysicalNw(logicalNwInfo.Spec.PhysicalNet, namespace, client, pluginInfo)
+			if err != nil {
+				return pluginInfoList, fmt.Errorf("CNI Genie failed to get plugin info from physical network object for the network %v, namespace %v\n",
+					networkName, namespace)
+			}
 		}
-		pluginInfo.PluginName = logicalNwInfo.Spec.Plugin
-
-		pluginInfo, err := GetPluginInfoFromPhysicalNw(logicalNwInfo.Spec.PhysicalNet, namespace, client, pluginInfo)
 
 		if logicalNwInfo.Spec.SubSubnet != "" {
 			pluginInfo.Subnet = logicalNwInfo.Spec.SubSubnet
