@@ -14,11 +14,11 @@
 **Feature 4: CNI-Genie "Default Plugin Selection"**
 * Support to set default plugin of user choice to be used for all the pods being created
 
-## Future features
-
 **Feature 5: CNI-Genie "Network Isolation"**
 * Dedicated 'physical' network for a tenant
 * Isolated 'logical' networks for different tenants on a shared 'physical'network 
+
+## Future features
 
 **Feature 6: CNI-Genie "Network Policy Engine"**
 * [CNI-Genie network policy engine](network-policy/README.md) allows for network level ACLs 
@@ -26,3 +26,4 @@
 **Feature 7: CNI-Genie "Real-time Network Switching"**
 * Price minimization: dynamically switching workload to a cheaper network as network prices change
 * Maximizing network utilization: dynamically switching workload to the less congested network at a threshold
+
