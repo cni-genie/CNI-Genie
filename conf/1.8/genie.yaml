@@ -19,6 +19,7 @@ rules:
     verbs:
       - get
       - update
+      - patch
   - apiGroups:
       - "alpha.network.k8s.io"
     resources:
@@ -26,19 +27,30 @@ rules:
     verbs:
       - get
       - update
-  - apiGroups:
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - nodes/status
-    verbs:
       - patch
+  - apiGroups:
+      - "k8s.cni.cncf.io"
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+  - apiGroups:
+      - "admissionregistration.k8s.io"
+    resources:
+      - validatingwebhookconfigurations
+    verbs:
+      - get
+      - update
+      - create
+      - delete
+
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -55,12 +67,14 @@ subjects:
 - kind: Group
   name: system:authenticated
   apiGroup: rbac.authorization.k8s.io
+
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: genie
   namespace: kube-system
+
 ---
 # This ConfigMap can be used to configure a self-hosted CNI-Genie installation.
 kind: ConfigMap
@@ -105,6 +119,8 @@ spec:
     metadata:
       labels:
         k8s-app: genie
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
       hostNetwork: true
       hostPID: true
@@ -116,7 +132,7 @@ spec:
         effect: NoSchedule
         operator: Exists
       containers:
-        # Create a container with install.sh that 
+        # Create a container with install.sh that
         # Installs required 00-genie.conf and genie binary
         # on slave node.
         - name: install-cni
@@ -139,14 +155,6 @@ spec:
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
       volumes:
-        # Used by genie/node.
-        #- name: lib-modules
-        #  hostPath:
-        #    path: /lib/modules
-        #- name: var-run-genie
-        #  hostPath:
-        #    path: /var/run/genie
-        # Used to install CNI.
         - name: cni-bin-dir
           hostPath:
             path: /opt/cni/bin
