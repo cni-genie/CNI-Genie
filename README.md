@@ -45,26 +45,28 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 
 [Watch multi-NICs per 'pod' demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-ips/README.md#feature-2-extension-cni-genie-multiple-ip-addresses-per-pod) (IP addresses assigned not only to the container, but also to the Pod)
 
-3. The user can leave the CNI plugin selection to CNI-Genie. CNI-Genie watches the Key Performance Indicator (KPI) that is of interest to the user and [selects the CNI plugin](docs/smart-cni-genie/README.md), accordingly.
+3. [Network Attachment Definition](docs/network-attachment-definitions/README.md). CNI-Genie supports [NPWG Multi-Network Specification v1](https://github.com/K8sNetworkPlumbingWG/multi-net-spec) style network attachment to pods, where pods can be assigned IP according to network-attachment-definition CRD objects created by user.
+
+4. The user can leave the CNI plugin selection to CNI-Genie. CNI-Genie watches the Key Performance Indicator (KPI) that is of interest to the user and [selects the CNI plugin](docs/smart-cni-genie/README.md), accordingly.
     - CNI Genie watches KPI(s) of interest for existing CNI plugins, e.g., occupancy rate, number of subnets, latency, bandwidth
 
 [Watch Smart CNI Plugin Selection demo](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/smart-cni-genie/README.md#demo)
 
 
-4. [Default plugin support](docs/default-plugin/README.md). Another useful feature from genie. Using this, we can ensure to get ip address(es) for a pod by selecting default set of plugins
+5. [Default plugin support](docs/default-plugin/README.md). Another useful feature from genie. Using this, we can ensure to get ip address(es) for a pod by selecting default set of plugins
 
 
-5. Network isolation, i.e.,
+6. Network isolation, i.e.,
     - Dedicated 'physical' network for a tenant
     - Isolated 'logical' networks for different tenants on a shared 'physical'network
 
     Usecase : [Obtaining Pod Ip address from customized subnet](docs/network-isolation/README.md)
 
 
-6. [CNI-Genie network policy engine](docs/network-policy/README.md) for network level ACLs
+7. [CNI-Genie network policy engine](docs/network-policy/README.md) for network level ACLs
 
 
-7. Real-time switching between different (physical or logical) networks for a given workload. This allows for
+8. Real-time switching between different (physical or logical) networks for a given workload. This allows for
     - Price minimization: dynamically switching workload to a cheaper network as network prices change    
     - Maximizing network utilization: dynamically switching workload to the less congested network at a threshold
     
@@ -75,3 +77,4 @@ CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes)
 Note: CNI-Genie itself is NOT a routing solution! It makes a call to CNI plugins that provide routing service
 
 ### More docs here [Getting started](docs/GettingStarted.md), [CNI-Genie Feature Set](docs/CNIGenieFeatureSet.md)
+
