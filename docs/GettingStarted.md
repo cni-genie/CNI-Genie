@@ -56,32 +56,9 @@ Kubernetes 1.8 version onwards:
 ```
 $ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.8/genie.yaml
 ```
-### Making changes to and build from source
+### Building, Testing, Making changes to source code
 
-Note that you should install genie first before making changes to the source. This ensures genie conf file is generated successfully.
-
-After making changes to source, build genie binary by running:
-```
-$ make all
-```
-Place "genie" binary from dest/ into /opt/cni/bin/ directory.
-```
-$ cp dist/genie /opt/cni/bin/genie
-```
-
-### Test process
-
-To run ginkgo tests for CNI-Genie run the following command:
-
-If Kubernetes cluster is 1.7+
-```
-$ make test testKubeVersion=1.7 testKubeConfig=/root/admin.conf
-```
-
-If Kubernetes cluster is 1.5.x
-```
-$ make test testKubeVersion=1.5
-```
+Refer to our [Developer's Guide](developer-guide.md) section.
 
 ### Genie Logs
 
