@@ -33,7 +33,7 @@ import (
 Returns the list of plugins intended by user through physical network crd
 	- annot : pod annotation received
 */
-func GetPluginInfoFromPhysicalNw(phyNwName string, namespace string, client *kubernetes.Clientset, pluginInfo utils.PluginInfo) (utils.PluginInfo, error) {
+func GetPluginInfoFromPhysicalNw(phyNwName string, namespace string, client *kubernetes.Clientset, pluginInfo *utils.PluginInfo) error {
 	physicalNwPath := fmt.Sprintf("/apis/alpha.network.k8s.io/v1/namespaces/%s/physicalnetworks/%s", namespace, phyNwName)
 
 	//fmt.Fprintf(os.Stderr, "CNI Genie networks out =%v, err=%v\n", out, err)
@@ -41,12 +41,12 @@ func GetPluginInfoFromPhysicalNw(phyNwName string, namespace string, client *kub
 	physicalNwObj, err := client.ExtensionsV1beta1().RESTClient().Get().AbsPath(physicalNwPath).DoRaw()
 
 	if err != nil {
-		return pluginInfo, fmt.Errorf("CNI Genie failed to get physical network object for the network %v, namespace %v\n", phyNwName, namespace)
+		return fmt.Errorf("CNI Genie failed to get physical network object for the network %v, namespace %v\n", phyNwName, namespace)
 	}
 
 	physicalNwInfo := utils.PhysicalNetwork{}
 	if err = json.Unmarshal(physicalNwObj, &physicalNwInfo); err != nil {
-		return pluginInfo, fmt.Errorf("CNI Genie failed to physical network info: %v", err)
+		return fmt.Errorf("CNI Genie failed to physical network info: %v", err)
 	}
 	pluginInfo.Refer_nic = physicalNwInfo.Spec.ReferNic
 	fmt.Fprintf(os.Stderr, "CNI Genie physicalNwInfo=%v\n", physicalNwInfo)
@@ -56,8 +56,8 @@ func GetPluginInfoFromPhysicalNw(phyNwName string, namespace string, client *kub
 	}
 
 	pluginInfo.Subnet = physicalNwInfo.Spec.SharedStatus.Subnet
-	fmt.Fprintf(os.Stderr, "CNI Genie pluginInfo =%v\n", pluginInfo)
-	return pluginInfo, nil
+	fmt.Fprintf(os.Stderr, "CNI Genie pluginInfo =%v\n", *pluginInfo)
+	return nil
 }
 
 /**
@@ -73,19 +73,13 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 	var networkName string
 
 	logicalNwList := strings.Split(networkAnnot, ",")
-	usedIntfMap := make(map[string]bool)
-	pluginInfo := utils.PluginInfo{}
 	pluginInfoList := make([]*utils.PluginInfo, 0, len(logicalNwList))
 	for _, logicalNw := range logicalNwList {
+		pluginInfo := new(utils.PluginInfo)
 		if true == strings.Contains(logicalNw, ":") {
 			netNIfName := strings.Split(logicalNw, ":")
 			networkName = strings.TrimSpace(netNIfName[0])
 			pluginInfo.IfName = strings.TrimSpace(netNIfName[1])
-			if usedIntfMap[pluginInfo.IfName] == false {
-				usedIntfMap[netNIfName[1]] = true
-			} else {
-				return nil, fmt.Errorf("Repeated request for same interface name: %s", pluginInfo.IfName)
-			}
 		} else {
 			networkName = strings.TrimSpace(logicalNw)
 		}
@@ -113,7 +107,7 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 					networkName, namespace)
 			}
 		} else {
-			pluginInfo, err = GetPluginInfoFromPhysicalNw(logicalNwInfo.Spec.PhysicalNet, namespace, client, pluginInfo)
+			err = GetPluginInfoFromPhysicalNw(logicalNwInfo.Spec.PhysicalNet, namespace, client, pluginInfo)
 			if err != nil {
 				return pluginInfoList, fmt.Errorf("CNI Genie failed to get plugin info from physical network object for the network %v, namespace %v\n",
 					networkName, namespace)
@@ -123,7 +117,7 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 		if logicalNwInfo.Spec.SubSubnet != "" {
 			pluginInfo.Subnet = logicalNwInfo.Spec.SubSubnet
 		}
-		fmt.Fprintf(os.Stderr, "CNI Genie pluginInfoList pluginInfo=%v\n", pluginInfo)
+		fmt.Fprintf(os.Stderr, "CNI Genie pluginInfoList pluginInfo=%v\n", *pluginInfo)
 
 		pluginInfo.Config, err = loadPluginConfig(&files, pluginInfo.PluginName)
 		if err != nil {
@@ -137,8 +131,8 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 			}
 			pluginInfo.Config.Plugins[0].Bytes = confbytes
 		}
-		pluginInfoList = append(pluginInfoList, &pluginInfo)
+		pluginInfoList = append(pluginInfoList, pluginInfo)
 	}
-	fmt.Fprintf(os.Stderr, "CNI Genie pluginInfoList =%v\n", pluginInfoList)
+
 	return pluginInfoList, nil
 }
