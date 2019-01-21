@@ -477,6 +477,7 @@ func getPodAnnotationsForCNI(client *kubernetes.Clientset, k8sArgs utils.K8sArgs
 // - Returns string
 func ParsePodAnnotationsForNetworks(client *kubernetes.Clientset, k8sArgs utils.K8sArgs) string {
 	annot, _ := getK8sPodAnnotations(client, k8sArgs)
+	fmt.Fprintf(os.Stderr, "CNI Genie annot= [%s]\n", annot)
 	networks := annot["networks"]
 	return networks
 }
