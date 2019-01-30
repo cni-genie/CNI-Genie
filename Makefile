@@ -10,12 +10,12 @@ TEST_SRCFILES=$(wildcard *_test.go)
 # Ensure that the dist directory is always created
 MAKE_SURE_DIST_EXIST := $(shell mkdir -p dist)
 
-.PHONY: clean plugin policy-controller policy-controller-binary admission-controller admission-controller-binary test
+.PHONY: clean plugin policy-controller policy-controller-binary admission-controller admission-controller-binary test-e2e
 default: plugin policy-controller-binary admission-controller-binary
 
 plugin: clean dist/genie
 
-test: dist/genie-test
+test-e2e: dist/genie-test
 
 clean:
 	rm -rf dist
@@ -49,4 +49,16 @@ genie-policy:
 
 # Build the genie cni plugin tests
 dist/genie-test: $(TEST_SRCFILES)
-	@GOPATH=$(GO_PATH) CGO_ENABLED=0 ETCD_IP=127.0.0.1 PLUGIN=genie CNI_SPEC_VERSION=0.3.0 go test -args --testKubeVersion=$(testKubeVersion) --testKubeConfig=$(testKubeConfig)
+	@GOPATH=$(GO_PATH) CGO_ENABLED=0 ETCD_IP=127.0.0.1 PLUGIN=genie CNI_SPEC_VERSION=0.3.0 go test ./e2e/ -args --testKubeVersion=$(testKubeVersion) --testKubeConfig=$(testKubeConfig)
+
+.PHONY: test
+
+ifeq ($(WHAT),)
+    TESTDIR=.
+else
+    TESTDIR=${WHAT}
+endif
+
+test: 
+	go test `go list ./${TESTDIR}/... | grep -v vendor | grep -v e2e | grep -v controllers`
+

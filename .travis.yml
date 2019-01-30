@@ -6,6 +6,10 @@ go:
   - master
   - 1.8.x
 
+script:
+  - make
+  - make test
+
 # TODO (Karun): This works only if travis has k8s environment. Hence commenting it for now.
 #install:
 #    - go get -v github.com/onsi/ginkgo/ginkgo
