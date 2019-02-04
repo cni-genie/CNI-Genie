@@ -29,7 +29,7 @@ func TestCmdAdd(t *testing.T) {
 	}{
 		{
 			&skel.CmdArgs{StdinData: bytes},
-			errors.New("CNI Genie Add IP internal error"),
+			errors.New("Error building kubernetes client"),
 		},
 	}
 
@@ -60,7 +60,7 @@ func TestCmdDel(t *testing.T) {
 	}{
 		{
 			&skel.CmdArgs{StdinData: bytes},
-			errors.New("CNI Genie release IP internal error"),
+			errors.New("Error building kubernetes client"),
 		},
 	}
 

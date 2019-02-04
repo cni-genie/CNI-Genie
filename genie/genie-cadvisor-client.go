@@ -29,6 +29,7 @@ import (
 	"fmt"
 	. "github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/google/cadvisor/info/v1"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -41,18 +42,26 @@ const (
 	DefaultCAdvisorPath = "http://127.0.0.1:4194"
 )
 
+type Cadvisor interface {
+	Get(url string) (*http.Response, error)
+	Post(url string, contentType string, body io.Reader) (*http.Response, error)
+}
+
 // Client represents the base URL for a cAdvisor client.
-type Client struct {
-	baseUrl    string
+type CadClient struct {
 	httpClient *http.Client
+}
+
+func getCadClient() *CadClient {
+	return &CadClient{httpClient: http.DefaultClient}
 }
 
 // Returns the JSON container information for the specified
 // Docker container and request.
-func GetDockerContainers(url string, query *v1.ContainerInfoRequest) (cinfo []ContainerStatsGenie, err error) {
+func (gc *GenieController) GetDockerContainers(url string, query *v1.ContainerInfoRequest) (cinfo []ContainerStatsGenie, err error) {
 	u := containerInfoUrl(url, "/")
 	var containerInfoObj ContainerInfoGenie
-	if err = httpGetJsonData(&containerInfoObj, query, u, "get all containers info"); err != nil {
+	if err = httpGetJsonData(&containerInfoObj, query, u, "get all containers info", gc.Cad); err != nil {
 		return
 	}
 	cinfo = containerInfoObj.Stats
@@ -63,7 +72,7 @@ func containerInfoUrl(baseUrl string, name string) string {
 	return baseUrl + path.Join("containers", name)
 }
 
-func httpGetJsonData(data, postData interface{}, url, infoName string) error {
+func httpGetJsonData(data, postData interface{}, url, infoName string, c Cadvisor) error {
 	var resp *http.Response
 	var err error
 	fmt.Fprintf(os.Stderr, "CAdvisor Client Inside httpGetJsonData() = %v\n", data)
@@ -73,9 +82,9 @@ func httpGetJsonData(data, postData interface{}, url, infoName string) error {
 		if marshalErr != nil {
 			return fmt.Errorf("unable to marshal data: %v", marshalErr)
 		}
-		resp, err = http.DefaultClient.Post(url, "application/json", bytes.NewBuffer(data))
+		resp, err = c.Post(url, "application/json", bytes.NewBuffer(data))
 	} else {
-		resp, err = http.DefaultClient.Get(url)
+		resp, err = c.Get(url)
 	}
 	fmt.Fprintf(os.Stderr, "CAdvisor Client resp = %v\n", resp)
 	if err != nil {
@@ -169,10 +178,10 @@ Returns network solution that has least load
 	- conf : Netconf info having genie configurations
 	- numStats : int (number of stats needed default 3)
 */
-func GetCNSOrderByNetworkBandwith(conf GenieConf) (string, error) {
+func (gc *GenieController) GetCNSOrderByNetworkBandwith(conf *GenieConf) (string, error) {
 	cAdvisorURL := getCAdvisorAddr(conf)
 
-	cinfo, err := GetDockerContainers(fmt.Sprintf("%s/api/v1.3/", cAdvisorURL), nil)
+	cinfo, err := gc.GetDockerContainers(fmt.Sprintf("%s/api/v1.3/", cAdvisorURL), nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "CAdvisor Client cinfo err = %v\n", err)
 		return "", err
@@ -187,10 +196,18 @@ func GetCNSOrderByNetworkBandwith(conf GenieConf) (string, error) {
 Returns cAdvisor Address to collect network usage parameters
 	- conf : Netconf info having genie configurations
 */
-func getCAdvisorAddr(conf GenieConf) string {
+func getCAdvisorAddr(conf *GenieConf) string {
 	conf.CAdvisorAddr = strings.TrimSpace(conf.CAdvisorAddr)
 	if conf.CAdvisorAddr == "" {
 		return DefaultCAdvisorPath
 	}
 	return conf.CAdvisorAddr
+}
+
+func (c *CadClient) Get(url string) (*http.Response, error) {
+	return c.httpClient.Get(url)
+}
+
+func (c *CadClient) Post(url string, contentType string, body io.Reader) (*http.Response, error) {
+	return c.httpClient.Post(url, contentType, body)
 }
