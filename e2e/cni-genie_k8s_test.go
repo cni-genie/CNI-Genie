@@ -91,7 +91,7 @@ var _ = Describe("CNIGenie", func() {
 			interfaceName := "eth0"
 			glog.Info(interfaceName)
 
-			FIt("should succeed romana networking for pod", func() {
+			It("should succeed romana networking for pod", func() {
 				annots := make(map[string]string)
 				annots["cni"] = "romana"
 				//Create a K8s Pod with calico cni
@@ -739,7 +739,7 @@ var _ = BeforeSuite(func() {
 	}
 	createNamespace(clientset)
 	// Start all the required plugins through shell script
-	cmd := exec.Command("./plugins_install.sh", "-all")
+	cmd := exec.Command("../plugins_install.sh", "-all")
 	_, err = cmd.Output()
 
 })
@@ -753,7 +753,7 @@ var _ = AfterSuite(func() {
 		panic(err)
 	}
 	// Delete all the installed plugins after usage
-	cmd := exec.Command("./plugins_install.sh", "-deleteall")
+	cmd := exec.Command("../plugins_install.sh", "-deleteall")
 	_, err = cmd.Output()
 
 })

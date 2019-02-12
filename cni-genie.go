@@ -33,13 +33,16 @@ func cmdAdd(args *skel.CmdArgs) error {
 	fmt.Fprintf(os.Stderr, "CNI Genie cmdAdd = %v\n", string(args.StdinData))
 
 	conf, err := genie.ParseCNIConf(args.StdinData)
-
 	if err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
 	}
+	gc, err := genie.NewGenieController(conf)
+	if err != nil {
+		return err
+	}
 	cniArgs := genie.PopulateCNIArgs(args)
 	fmt.Fprintf(os.Stderr, "CNI Genie Add IP address\n")
-	result, ipamErr := genie.AddPodNetwork(cniArgs, conf)
+	result, ipamErr := gc.AddPodNetwork(cniArgs, conf)
 	if ipamErr != nil || nil == result {
 		return fmt.Errorf("CNI Genie Add IP internal error: %v, result: %s", ipamErr, result)
 	}
@@ -52,13 +55,16 @@ func cmdDel(args *skel.CmdArgs) error {
 	fmt.Fprintf(os.Stderr, "CNI Genie cmdDel = %v\n", string(args.StdinData))
 
 	conf, err := genie.ParseCNIConf(args.StdinData)
-
 	if err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
 	}
+	gc, err := genie.NewGenieController(conf)
+	if err != nil {
+		return err
+	}
 	cniArgs := genie.PopulateCNIArgs(args)
 	fmt.Fprintf(os.Stderr, "CNI Genie releasing IP address\n")
-	ipamErr := genie.DeletePodNetwork(cniArgs, conf)
+	ipamErr := gc.DeletePodNetwork(cniArgs, conf)
 	if ipamErr != nil {
 		return fmt.Errorf("CNI Genie release IP internal error: %v", ipamErr)
 	}

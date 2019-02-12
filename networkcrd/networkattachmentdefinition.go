@@ -3,8 +3,9 @@ package networkcrd
 import (
 	"encoding/json"
 	"fmt"
+	client "github.com/Huawei-PaaS/CNI-Genie/client"
+	it "github.com/Huawei-PaaS/CNI-Genie/interfaces"
 	"github.com/containernetworking/cni/libcni"
-	"k8s.io/client-go/kubernetes"
 	"net"
 	"os"
 	"regexp"
@@ -107,23 +108,11 @@ type optionalParameters struct {
 	} `json:"cni"`
 }
 
-func confListFromConfBytes(bytes []byte) (*libcni.NetworkConfigList, error) {
-	conf, err := libcni.ConfFromBytes(bytes)
-	if err != nil {
-		return nil, err
-	}
-	confList, err := libcni.ConfListFromConf(conf)
-	if err != nil {
-		return nil, err
-	}
-	return confList, nil
-}
-
 func GetConfigFromFile(networkCrd *NetworkAttachmentDefinition, cniDir string) (*libcni.NetworkConfigList, error) {
 	return libcni.LoadConfList(cniDir, networkCrd.Name)
 }
 
-func GetConfigFromSpec(networkCrd *NetworkAttachmentDefinition) (*libcni.NetworkConfigList, error) {
+func GetConfigFromSpec(networkCrd *NetworkAttachmentDefinition, cni it.CNI) (*libcni.NetworkConfigList, error) {
 	config := make(map[string]interface{})
 	configbytes := []byte(networkCrd.Spec.Config)
 	var netConfigList *libcni.NetworkConfigList
@@ -141,12 +130,12 @@ func GetConfigFromSpec(networkCrd *NetworkAttachmentDefinition) (*libcni.Network
 	}
 
 	if _, ok := config["plugins"]; ok {
-		netConfigList, err = libcni.ConfListFromBytes(configbytes)
+		netConfigList, err = cni.ConfListFromBytes(configbytes)
 		if err != nil {
 			return nil, fmt.Errorf("Error getting conflist from bytes: %v", err)
 		}
 	} else {
-		netConfigList, err = confListFromConfBytes(configbytes)
+		netConfigList, err = cni.ConfListFromConfBytes(configbytes)
 		if err != nil {
 			return nil, fmt.Errorf("Error converting conf bytes to conflist: %v", err)
 		}
@@ -155,10 +144,10 @@ func GetConfigFromSpec(networkCrd *NetworkAttachmentDefinition) (*libcni.Network
 	return netConfigList, nil
 }
 
-func GetNetworkCRDObject(kubeClient *kubernetes.Clientset, name, namespace string) (*NetworkAttachmentDefinition, error) {
+func GetNetworkCRDObject(kubeClient *client.KubeClient, name, namespace string) (*NetworkAttachmentDefinition, error) {
 	path := fmt.Sprintf("/apis/k8s.cni.cncf.io/v1/namespaces/%s/network-attachment-definitions/%s", namespace, name)
 	fmt.Fprintf(os.Stderr, "CNI Genie network attachment definition object (%s:%s) path: %s\n", namespace, name, path)
-	obj, err := kubeClient.ExtensionsV1beta1().RESTClient().Get().AbsPath(path).DoRaw()
+	obj, err := kubeClient.GetRaw(path)
 	if err != nil {
 		return nil, fmt.Errorf("Error performing GET request: %v", err)
 	}

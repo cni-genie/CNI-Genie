@@ -5,7 +5,6 @@ import (
 	"github.com/Huawei-PaaS/CNI-Genie/networkcrd"
 	"github.com/Huawei-PaaS/CNI-Genie/utils"
 	"github.com/containernetworking/cni/libcni"
-	"k8s.io/client-go/kubernetes"
 	"os"
 	"strings"
 )
@@ -14,9 +13,9 @@ const (
 	GenieConfFile = "00-genie.conf"
 )
 
-func parseNetAttachDefAnnot(annot string, kubeClient *kubernetes.Clientset, k8sArgs utils.K8sArgs, cniDir string) ([]*utils.PluginInfo, error) {
+func (gc *GenieController) parseNetAttachDefAnnot(annot string, k8sArgs *utils.K8sArgs) ([]*utils.PluginInfo, error) {
 	var pluginInfoList []*utils.PluginInfo
-	config, err := getClusterNetwork(cniDir)
+	config, err := gc.getClusterNetwork(gc.Cfg.NetDir)
 	if err != nil {
 		return nil, err
 	}
@@ -30,13 +29,13 @@ func parseNetAttachDefAnnot(annot string, kubeClient *kubernetes.Clientset, k8sA
 	fmt.Fprintf(os.Stderr, "CNI Genie network elements from network selection annotation: %+v\n", networks)
 
 	for _, netElem := range networks {
-		network, err := networkcrd.GetNetworkCRDObject(kubeClient, netElem.Name, netElem.Namespace)
+		network, err := networkcrd.GetNetworkCRDObject(gc.Kc, netElem.Name, netElem.Namespace)
 		if err != nil {
 			return nil, fmt.Errorf("Error getting network crd object: %v", err)
 		}
 
 		pluginInfo := utils.PluginInfo{}
-		pluginInfo.Config, err = getNetworkConfig(network, cniDir)
+		pluginInfo.Config, err = gc.getNetworkConfig(network)
 		if err != nil {
 			return nil, err
 		}
@@ -56,17 +55,17 @@ func parseNetAttachDefAnnot(annot string, kubeClient *kubernetes.Clientset, k8sA
 	return pluginInfoList, nil
 }
 
-func getNetworkConfig(network *networkcrd.NetworkAttachmentDefinition, cniDir string) (*libcni.NetworkConfigList, error) {
+func (gc *GenieController) getNetworkConfig(network *networkcrd.NetworkAttachmentDefinition) (*libcni.NetworkConfigList, error) {
 	var config *libcni.NetworkConfigList
 	var err error
 	emptySpec := networkcrd.NetworkAttachmentDefinitionSpec{}
 	if network.Spec == emptySpec || network.Spec.Config == "" {
-		config, err = networkcrd.GetConfigFromFile(network, cniDir)
+		config, err = networkcrd.GetConfigFromFile(network, gc.Cfg.NetDir)
 		if err != nil {
 			return nil, fmt.Errorf("Error extracting plugin configuration from configuration file for net-attach-def object (%s:%s): %v", network.Namespace, network.Name, err)
 		}
 	} else {
-		config, err = networkcrd.GetConfigFromSpec(network)
+		config, err = networkcrd.GetConfigFromSpec(network, gc.Cfg.CNI)
 		if err != nil {
 			return nil, fmt.Errorf("Error extracting plugin configuration from object spec for net-attach-def object (%s:%s): %v", network.Namespace, network.Name, err)
 		}
@@ -83,20 +82,15 @@ func getNetworkConfig(network *networkcrd.NetworkAttachmentDefinition, cniDir st
 // (if required) in the cluster. If no conf/conflist file (other than 00-genie.conf)
 // is present in the directory, then network attachment will fail assuming non-readiness
 // of node.
-func getClusterNetwork(cniDir string) (*libcni.NetworkConfigList, error) {
-	files, err := getConfFiles(cniDir)
-	if err != nil {
-		return nil, fmt.Errorf("Error listing configuration files in cni directory (%s): %v", cniDir, err)
-	}
-
-	if len(files) <= 1 {
+func (gc *GenieController) getClusterNetwork(cniDir string) (*libcni.NetworkConfigList, error) {
+	if len(gc.Cfg.Files) <= 1 {
 		return nil, fmt.Errorf("No cni plugin has been installed on node.")
 	}
-	for _, file := range files {
+	for _, file := range gc.Cfg.Files {
 		if strings.Contains(file, GenieConfFile) {
 			continue
 		}
-		config, err := ParseCNIConfFromFile(file)
+		config, err := gc.Cfg.ParseCNIConfFromFile(file)
 		if err != nil {
 			continue
 		}

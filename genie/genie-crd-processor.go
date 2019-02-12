@@ -21,11 +21,8 @@ package genie
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/client-go/kubernetes"
-	"os"
-	//"os/exec"
-	//"strings"
 	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"os"
 	"strings"
 )
 
@@ -33,12 +30,12 @@ import (
 Returns the list of plugins intended by user through physical network crd
 	- annot : pod annotation received
 */
-func GetPluginInfoFromPhysicalNw(phyNwName string, namespace string, client *kubernetes.Clientset, pluginInfo *utils.PluginInfo) error {
+func (gc *GenieController) getPluginInfoFromPhysicalNw(phyNwName string, namespace string, pluginInfo *utils.PluginInfo) error {
 	physicalNwPath := fmt.Sprintf("/apis/alpha.network.k8s.io/v1/namespaces/%s/physicalnetworks/%s", namespace, phyNwName)
 
 	//fmt.Fprintf(os.Stderr, "CNI Genie networks out =%v, err=%v\n", out, err)
 	fmt.Fprintf(os.Stderr, "CNI Genie physical newtwork self link=%v\n", physicalNwPath)
-	physicalNwObj, err := client.ExtensionsV1beta1().RESTClient().Get().AbsPath(physicalNwPath).DoRaw()
+	physicalNwObj, err := gc.Kc.GetRaw(physicalNwPath)
 
 	if err != nil {
 		return fmt.Errorf("CNI Genie failed to get physical network object for the network %v, namespace %v\n", phyNwName, namespace)
@@ -64,12 +61,7 @@ func GetPluginInfoFromPhysicalNw(phyNwName string, namespace string, client *kub
 Returns the list of plugins intended by user through network crd
 	- annot : pod annotation received
 */
-func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kubernetes.Clientset) ([]*utils.PluginInfo, error) {
-	files, err := getConfFiles(DefaultNetDir)
-	if err != nil {
-		return nil, err
-	}
-
+func (gc *GenieController) getPluginInfoFromNwAnnot(networkAnnot string, namespace string) ([]*utils.PluginInfo, error) {
 	var networkName string
 
 	logicalNwList := strings.Split(networkAnnot, ",")
@@ -88,7 +80,7 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 			networkName)
 		//fmt.Fprintf(os.Stderr, "CNI Genie networks out =%v, err=%v\n", out, err)
 		fmt.Fprintf(os.Stderr, "CNI Genie logical newtwork self link=%v\n", logicalNwPath)
-		logicalNwObj, err := client.ExtensionsV1beta1().RESTClient().Get().AbsPath(logicalNwPath).DoRaw()
+		logicalNwObj, err := gc.Kc.GetRaw(logicalNwPath)
 
 		if err != nil {
 			return pluginInfoList, fmt.Errorf("CNI Genie failed to get logical network object for the network %v, namespace %v\n", networkName, namespace)
@@ -107,7 +99,7 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 					networkName, namespace)
 			}
 		} else {
-			err = GetPluginInfoFromPhysicalNw(logicalNwInfo.Spec.PhysicalNet, namespace, client, pluginInfo)
+			err = gc.getPluginInfoFromPhysicalNw(logicalNwInfo.Spec.PhysicalNet, namespace, pluginInfo)
 			if err != nil {
 				return pluginInfoList, fmt.Errorf("CNI Genie failed to get plugin info from physical network object for the network %v, namespace %v\n",
 					networkName, namespace)
@@ -119,7 +111,7 @@ func GetPluginInfoFromNwAnnot(networkAnnot string, namespace string, client *kub
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie pluginInfoList pluginInfo=%v\n", *pluginInfo)
 
-		pluginInfo.Config, err = loadPluginConfig(&files, pluginInfo.PluginName)
+		pluginInfo.Config, err = gc.loadPluginConfig(pluginInfo.PluginName)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading plugin configuration for plugin (%s) for logical network (%s:%s): %v", pluginInfo.PluginName, namespace, networkName, err)
 		}
