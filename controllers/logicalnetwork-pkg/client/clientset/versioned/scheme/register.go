@@ -18,7 +18,7 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
-	alphav1 "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
+	alphav1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
 )
 
 var Scheme = runtime.NewScheme()

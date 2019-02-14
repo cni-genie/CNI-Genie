@@ -22,9 +22,9 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
-	internalinterfaces "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
-	network "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/network"
+	versioned "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
+	internalinterfaces "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
+	network "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/network"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.

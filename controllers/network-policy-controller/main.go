@@ -20,9 +20,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	clientset "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
-	extinformers "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions"
-	"github.com/Huawei-PaaS/CNI-Genie/controllers/network-policy-controller/signals"
+	clientset "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
+	extinformers "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions"
+	"github.com/cni-genie/CNI-Genie/controllers/network-policy-controller/signals"
 
 	"github.com/golang/glog"
 )

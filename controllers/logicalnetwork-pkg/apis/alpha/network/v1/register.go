@@ -18,8 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network"
-	. "github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network"
+	. "github.com/cni-genie/CNI-Genie/utils"
 )
 
 // SchemeGroupVersion is group version used to register these objects

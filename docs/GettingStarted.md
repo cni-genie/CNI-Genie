@@ -48,7 +48,7 @@ We install genie as a Docker Container on every node
 
 #### *Till Kubernetes 1.7 version:*
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.5/genie.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/cni-genie/CNI-Genie/master/conf/1.5/genie.yaml
 ```
 
 #### *Kubernetes 1.8 version onwards:*
@@ -57,12 +57,12 @@ CNI-Genie can be installed in the following two modes:
 
 *Genie Complete (Installs genie with the support of multi networking as well as network policy implementation):*
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.8/genie-complete.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/cni-genie/CNI-Genie/master/conf/1.8/genie-complete.yaml
 ```
 
 *Genie Plugin-only (Installs genie with multi networking support):*
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.8/genie-plugin.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/cni-genie/CNI-Genie/master/conf/1.8/genie-plugin.yaml
 ```
 
 ### Building, Testing, Making changes to source code

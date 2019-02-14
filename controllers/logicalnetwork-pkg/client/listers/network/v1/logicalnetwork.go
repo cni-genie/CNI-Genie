@@ -17,8 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
-	v1 "github.com/Huawei-PaaS/CNI-Genie/utils"
-	r "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
+	v1 "github.com/cni-genie/CNI-Genie/utils"
+	r "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
 )
 
 // LogicalNetworkLister helps list LogicalNetworks.

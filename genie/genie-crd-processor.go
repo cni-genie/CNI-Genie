@@ -21,7 +21,7 @@ package genie
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/cni-genie/CNI-Genie/utils"
 	"os"
 	"strings"
 )

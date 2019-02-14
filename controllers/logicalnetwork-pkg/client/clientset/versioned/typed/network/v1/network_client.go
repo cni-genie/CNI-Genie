@@ -16,8 +16,8 @@ package v1
 import (
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
-	v1 "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
-	"github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/scheme"
+	v1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
+	"github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/scheme"
 )
 
 type AlphaV1Interface interface {

@@ -49,12 +49,12 @@ We install genie as a Docker Container on every node
 
 Till Kubernetes 1.7 version: 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/conf/1.5/genie.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/cni-genie/CNI-Genie/master/conf/1.5/genie.yaml
 ```
 
 Kubernetes 1.8 version onwards:
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/Huawei-PaaS/CNI-Genie/master/releases/v2.0/genie.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/cni-genie/CNI-Genie/master/releases/v2.0/genie.yaml
 ```
 ### Making changes to and build from source
 

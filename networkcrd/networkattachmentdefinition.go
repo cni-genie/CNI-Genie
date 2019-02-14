@@ -3,8 +3,8 @@ package networkcrd
 import (
 	"encoding/json"
 	"fmt"
-	client "github.com/Huawei-PaaS/CNI-Genie/client"
-	it "github.com/Huawei-PaaS/CNI-Genie/interfaces"
+	client "github.com/cni-genie/CNI-Genie/client"
+	it "github.com/cni-genie/CNI-Genie/interfaces"
 	"github.com/containernetworking/cni/libcni"
 	"net"
 	"os"
