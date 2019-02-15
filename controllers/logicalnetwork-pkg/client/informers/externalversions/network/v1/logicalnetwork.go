@@ -20,10 +20,10 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	network_v1 "github.com/Huawei-PaaS/CNI-Genie/utils"
-	versioned "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
-	internalinterfaces "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/listers/network/v1"
+	network_v1 "github.com/cni-genie/CNI-Genie/utils"
+	versioned "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
+	internalinterfaces "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/listers/network/v1"
 )
 
 // LogicalNetworkInformer provides access to a shared informer and lister for

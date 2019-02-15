@@ -14,8 +14,8 @@
 package alpha
 
 import (
-	internalinterfaces "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/network/v1"
+	internalinterfaces "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/network/v1"
 )
 
 // Interface provides access to each of this group's versions.

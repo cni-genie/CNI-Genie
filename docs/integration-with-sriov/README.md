@@ -2,7 +2,7 @@
 
 # Steps to use sr-iov with CNI-Genie
 
-1. Enable SR-IOV on the supported nodes (refer [Enable SR-IOV](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/integration-with-sriov/README.md#enable-sr-iov) section).
+1. Enable SR-IOV on the supported nodes (refer [Enable SR-IOV](https://github.com/cni-genie/CNI-Genie/blob/master/docs/integration-with-sriov/README.md#enable-sr-iov) section).
 
 2. Build sr-iov binary. Build procedure can be followed from [here](https://github.com/hustcat/sriov-cni/blob/master/README.md).
 

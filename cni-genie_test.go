@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/cni-genie/CNI-Genie/utils"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"strings"

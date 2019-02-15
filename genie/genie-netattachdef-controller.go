@@ -2,8 +2,8 @@ package genie
 
 import (
 	"fmt"
-	"github.com/Huawei-PaaS/CNI-Genie/networkcrd"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/cni-genie/CNI-Genie/networkcrd"
+	"github.com/cni-genie/CNI-Genie/utils"
 	"github.com/containernetworking/cni/libcni"
 	"os"
 	"strings"

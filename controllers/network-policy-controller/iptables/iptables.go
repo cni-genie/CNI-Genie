@@ -16,7 +16,7 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/cni-genie/CNI-Genie/utils"
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/golang/glog"
 	"strconv"

@@ -19,7 +19,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "github.com/Huawei-PaaS/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
+	versioned "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
 )
 
 type NewInformerFunc func(versioned.Interface, time.Duration) cache.SharedIndexInformer

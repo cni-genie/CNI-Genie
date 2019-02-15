@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/Huawei-PaaS/CNI-Genie/utils"
+	"github.com/cni-genie/CNI-Genie/utils"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
