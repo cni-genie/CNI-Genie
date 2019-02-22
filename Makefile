@@ -59,6 +59,10 @@ else
     TESTDIR=${WHAT}
 endif
 
-test: 
-	go test `go list ./${TESTDIR}/... | grep -v vendor | grep -v e2e | grep -v controllers`
+ifeq ($(print),y)
+    PRINT=-v
+endif
+
+test:
+	go test ${PRINT} `go list ./${TESTDIR}/... | grep -v vendor | grep -v e2e | grep -v controllers`
 

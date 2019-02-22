@@ -8,7 +8,7 @@ go:
 
 script:
   - make
-  - make test
+  - make test print=y
 
 # TODO (Karun): This works only if travis has k8s environment. Hence commenting it for now.
 #install:
