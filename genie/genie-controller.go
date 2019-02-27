@@ -348,7 +348,12 @@ func (gc *GenieController) delegateAddNetwork(pluginInfo *utils.PluginInfo, cniA
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie runtime conf for plugin (%s): %v\n", pluginInfo.PluginName, *rtConf)
 
-	return gc.Invoke.InvokeExecAdd(pluginInfo.Config, rtConf)
+	res, err := gc.Invoke.InvokeExecAdd(pluginInfo.Config, rtConf)
+	if err != nil {
+		return nil, fmt.Errorf("Error from cni: %v", err)
+	}
+
+	return res, nil
 }
 
 // deleteNetwork is a core function that delegates call to release IP from a Container Networking Solution (CNI Plugin)
@@ -384,7 +389,12 @@ func (gc *GenieController) delegateDelNetwork(pluginInfo *utils.PluginInfo, cniA
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie runtime conf for plugin (%s): %v\n", pluginInfo.PluginName, *rtConf)
 
-	return gc.Invoke.InvokeExecDel(pluginInfo.Config, rtConf)
+	err = gc.Invoke.InvokeExecDel(pluginInfo.Config, rtConf)
+	if err != nil {
+		return fmt.Errorf("Error from cni: %v", err)
+	}
+
+	return nil
 }
 
 // UpdatePodDefinition updates the pod definition with the given annotation.
