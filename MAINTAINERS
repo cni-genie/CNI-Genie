@@ -1,0 +1,14 @@
+# Official list of CNI Genie Maintainers.
+#
+# Names added to this file should be in the following format:
+#     Individual's name <email address> @githubhandle
+#
+# Currently CNI Genie doesn't have folder wise maintainers.
+# 4th column will be added in the list to specify the folder maintained by an individual.
+#
+# Below list to be maintained in ascending order.
+
+Jun Du <dujun5@huawei.com> @m1093782566
+Sushantha Kumar <sushanthakumar@huawei.com> @sushanthakumar
+Zefeng (Kevin) Wang <wangzefeng@huawei.com> @kevin-wangzefeng
+
