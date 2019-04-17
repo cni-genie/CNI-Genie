@@ -40,6 +40,8 @@ func (gc *GenieController) parseNetAttachDefAnnot(annot string, k8sArgs *utils.K
 			return nil, err
 		}
 
+		pluginInfo.OptionalArgs = make(map[string]string, 0)
+
 		if len(netElem.IPs) > 0 {
 			pluginInfo.OptionalArgs["ips"] = strings.Join(netElem.IPs, ",")
 		}
