@@ -342,6 +342,9 @@ func (gc *GenieController) delegateAddNetwork(pluginInfo *utils.PluginInfo, cniA
 	if err := os.Unsetenv("CNI_IFNAME"); err != nil {
 		fmt.Fprintf(os.Stderr, "CNI Genie Error while unsetting env variable CNI_IFNAME: %v\n", err)
 	}
+	if err := os.Unsetenv("CNI_ARGS"); err != nil {
+		fmt.Fprintf(os.Stderr, "CNI Genie Error while unsetting env variable CNI_Args: %v\n", err)
+	}
 	rtConf, err := runtimeConf(cniArgs, pluginInfo.IfName, pluginInfo.OptionalArgs)
 	if err != nil {
 		return nil, fmt.Errorf("Error generating runtime conf: %v", err)
@@ -784,15 +787,24 @@ func runtimeConf(cniArgs *utils.CNIArgs, iface string, optionalArgs map[string]s
 		args = append(args, [2]string{"K8S_POD_INFRA_CONTAINER_ID", string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID)})
 	}
 
-	for key, value := range optionalArgs {
-		args = append(args, [2]string{key, value})
-	}
+	args = append(args, setOptionalArgs(optionalArgs)...)
 
 	return &libcni.RuntimeConf{
 		ContainerID: cniArgs.ContainerID,
 		NetNS:       cniArgs.Netns,
 		IfName:      iface,
 		Args:        args}, nil
+}
+
+func setOptionalArgs(optionalParam map[string]string) [][2]string {
+	args := [][2]string{}
+	if optionalParam["ips"] != "" {
+		args = append(args, [2]string{"IP", optionalParam["ips"]})
+	}
+	if optionalParam["mac"] != "" {
+		args = append(args, [2]string{"MAC", optionalParam["mac"]})
+	}
+	return args
 }
 
 func defaultPlugins(conf *utils.GenieConf) []string {
