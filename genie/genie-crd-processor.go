@@ -68,8 +68,8 @@ func (gc *GenieController) getPluginInfoFromNwAnnot(networkAnnot string, namespa
 	pluginInfoList := make([]*utils.PluginInfo, 0, len(logicalNwList))
 	for _, logicalNw := range logicalNwList {
 		pluginInfo := new(utils.PluginInfo)
-		if true == strings.Contains(logicalNw, ":") {
-			netNIfName := strings.Split(logicalNw, ":")
+		if true == strings.Contains(logicalNw, utils.IfNameDelimiter) {
+			netNIfName := strings.Split(logicalNw, utils.IfNameDelimiter)
 			networkName = strings.TrimSpace(netNIfName[0])
 			pluginInfo.IfName = strings.TrimSpace(netNIfName[1])
 		} else {

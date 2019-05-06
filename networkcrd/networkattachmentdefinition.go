@@ -5,6 +5,7 @@ import (
 	"fmt"
 	client "github.com/cni-genie/CNI-Genie/client"
 	it "github.com/cni-genie/CNI-Genie/interfaces"
+	"github.com/cni-genie/CNI-Genie/utils"
 	"github.com/containernetworking/cni/libcni"
 	"net"
 	"os"
@@ -58,7 +59,7 @@ func parseNetworkInfoFromAnnot(network *NetworkSelectionElement, annot string) {
 		network.Namespace = annot[:ns]
 	}
 	network.Name = annot[ns+1:]
-	ni := strings.LastIndex(network.Name, "@")
+	ni := strings.LastIndex(network.Name, utils.IfNameDelimiter)
 	if ni >= 0 {
 		network.Interface = network.Name[ni+1:]
 		network.Name = network.Name[:ni]

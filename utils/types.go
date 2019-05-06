@@ -25,6 +25,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// Delimiter seperating plugin/network name from interfece name
+	IfNameDelimiter = "@"
+)
+
 type ContainerInfoGenie struct {
 	// Historical statistics gathered from the container.
 	Stats []ContainerStatsGenie `json:"stats,omitempty"`
