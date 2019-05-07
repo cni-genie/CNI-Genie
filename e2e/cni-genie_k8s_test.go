@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"math/rand"
@@ -188,7 +188,7 @@ var _ = Describe("CNIGenie", func() {
 
 			FIt("should succeed multi-ip networking for pod", func() {
 				annots := make(map[string]string)
-				annots["cni"] = "calico,weave"
+				annots["cni"] = "flannel,weave"
 				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        name,
@@ -698,6 +698,51 @@ var _ = Describe("CNIGenie", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Waiting for the pod to have running status with default plugin(weave)")
+				By("Waiting 10 seconds")
+				time.Sleep(time.Duration(10 * time.Second))
+				pod, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				glog.Info("pod status =", string(pod.Status.Phase))
+				Expect(string(pod.Status.Phase)).To(Equal("Running"))
+
+				By("Pod was in Running state... Time to delete the pod now...")
+				err = clientset.CoreV1().Pods(TEST_NAMESPACE).Delete(name, &metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				By("Waiting 5 seconds")
+				time.Sleep(time.Duration(5 * time.Second))
+				By("Check for pod deletion")
+				_, err = clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+				if err != nil && errors.IsNotFound(err) {
+					//do nothing pod has already been deleted
+				}
+				Expect("Success").To(Equal("Success"))
+			})
+		})
+	})
+
+	Describe("Verify plugin with interface name case : pod with plugin+interface name case", func() {
+		glog.Info("plugin with interface name case : pod with plugin+interface name case")
+		Context("using cni-genie for verifying plugin with interface name case : pod with plugin+interface name case", func() {
+			name := fmt.Sprintf("nginx-pod-with-ifname-%d", rand.Uint32())
+
+			FIt("should succeed multinetworking with ifname for pod", func() {
+				annots := make(map[string]string)
+				annots["cni"] = "flannel,weave@eth4,flannel@eth5, flannel"
+				_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        name,
+						Annotations: annots,
+					},
+					Spec: v1.PodSpec{Containers: []v1.Container{{
+						Name:            fmt.Sprintf("container-%s", name),
+						Image:           "nginx:latest",
+						ImagePullPolicy: "IfNotPresent",
+					}}},
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for the pod to have running status with plugin + ifname")
 				By("Waiting 10 seconds")
 				time.Sleep(time.Duration(10 * time.Second))
 				pod, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
