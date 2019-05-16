@@ -72,6 +72,12 @@ func cmdDel(args *skel.CmdArgs) error {
 	return nil
 }
 
+func cmdCheck(args *skel.CmdArgs) error {
+	fmt.Fprintf(os.Stderr, "CNI Genie cmdCheck = %v\n", string(args.StdinData))
+
+	return nil
+}
+
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel, version.All)
+	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, "CNI Genie plugin")
 }
