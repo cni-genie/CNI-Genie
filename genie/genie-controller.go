@@ -204,7 +204,9 @@ func (gc *GenieController) DeletePodNetwork(cniArgs *utils.CNIArgs, conf *utils.
 
 	podAnnot, err := gc.getPodAnnotationsForCNI(k8sArgs)
 	if err != nil {
-		return fmt.Errorf("Error getting annotations for pod (%s:%s): %v", k8sArgs.K8S_POD_NAMESPACE, k8sArgs.K8S_POD_NAME, err)
+		//Incase of pos container delete, getting pod info will fail. So return success in this case
+		//to ensure complete cleanup of pos container
+		return nil
 	}
 
 	err = gc.Cfg.LoadConfFiles()
