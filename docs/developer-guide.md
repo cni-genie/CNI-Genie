@@ -51,19 +51,28 @@ kubectl delete pod <genie-policy-controller pod name> -nkube-system
 
 ### Test process
 
-#### prerequisites
+#### *Unit Testing:*
+To run unit test, execute below command:
+```
+make test
+```
+
+#### *E2E Testing:*
+
+##### Prerequisites
 
 A running kubernetes cluster is required to run the tests.
 
-#### Running the tests
+##### Running the tests
 
 To run ginkgo tests for CNI-Genie run the following command:
 
 If Kubernetes cluster is 1.7+
 ```
-make test testKubeVersion=1.7 testKubeConfig=/etc/kubernetes/admin.conf
+make test-e2e testKubeVersion=1.7 testKubeConfig=/etc/kubernetes/admin.conf
 ```
 
 If Kubernetes cluster is 1.5.x
 ```
-make test testKubeVersion=1.5
+make test-e2e testKubeVersion=1.5
+
