@@ -466,27 +466,26 @@ func getConfFiles(dir string) ([]string, error) {
 	return files, err
 }
 
+// Gets all the info related to plugin using respective plugin config files
 func (gc *GenieController) getPluginInfo(plugins []string) ([]*utils.PluginInfo, error) {
-	if len(plugins) == 1 {
-		plugininfo, err := gc.loadPluginConfig(plugins[0])
-		if err != nil {
-			return nil, err
-		}
-		return []*utils.PluginInfo{{PluginName: strings.TrimSpace(plugins[0]), Config: plugininfo}}, nil
-	}
-	return gc.loadPluginInfoList(plugins)
-}
-
-func (gc *GenieController) loadPluginInfoList(plugins []string) ([]*utils.PluginInfo, error) {
 	pluginInfoList := make([]*utils.PluginInfo, len(plugins))
 	pluginMap := make(map[string]map[bool][]int)
+	ifNameMap := make(map[int]string)
 	for i := range plugins {
-		plugins[i] = strings.TrimSpace(plugins[i])
-		if pluginMap[plugins[i]] == nil {
-			pluginMap[plugins[i]] = map[bool][]int{false: {i + 1}}
-		} else {
-			pluginMap[plugins[i]][false] = append(pluginMap[plugins[i]][false], i+1)
+		pluginName := strings.TrimSpace(plugins[i])
+		ifName := ""
+		if true == strings.Contains(pluginName, utils.IfNameDelimiter) {
+			netNIfName := strings.Split(pluginName, utils.IfNameDelimiter)
+			pluginName = strings.TrimSpace(netNIfName[0])
+			ifName = strings.TrimSpace(netNIfName[1])
 		}
+
+		if pluginMap[pluginName] == nil {
+			pluginMap[pluginName] = map[bool][]int{false: {i + 1}}
+		} else {
+			pluginMap[pluginName][false] = append(pluginMap[pluginName][false], i+1)
+		}
+		ifNameMap[i] = ifName
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie plugion map: %+v\n", pluginMap)
 	for _, file := range gc.Cfg.Files {
@@ -511,6 +510,7 @@ func (gc *GenieController) loadPluginInfoList(plugins []string) ([]*utils.Plugin
 				pluginInfoList[index-1] = &utils.PluginInfo{
 					PluginName: pluginName,
 					Config:     config,
+					IfName:     ifNameMap[index-1],
 				}
 			}
 			delete(pluginMap, pluginName)
