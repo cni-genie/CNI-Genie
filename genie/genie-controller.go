@@ -206,6 +206,7 @@ func (gc *GenieController) DeletePodNetwork(cniArgs *utils.CNIArgs, conf *utils.
 	if err != nil {
 		//Incase of pos container delete, getting pod info will fail. So return success in this case
 		//to ensure complete cleanup of pos container
+		fmt.Fprintf(os.Stderr, "CNI Genie could not get pod annotations during pod delete")
 		return nil
 	}
 
