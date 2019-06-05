@@ -24,41 +24,38 @@
 #   go-tests = true
 #   unused-packages = true
 
+
 [[constraint]]
   name = "github.com/containernetworking/cni"
-  version = "0.6.0"
+  version = "0.7.0"
 
 [[constraint]]
   name = "github.com/coreos/go-iptables"
-  version = "0.4.0"
+  version = "0.4.1"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/golang/glog"
-  revision = "44145f04b68cf362d9c4df2182967c2275eaefed"
 
 [[constraint]]
   name = "github.com/google/cadvisor"
-  version = "0.31.0"
+  version = "0.33.1"
 
 [[constraint]]
   name = "github.com/onsi/ginkgo"
-  version = "1.6.0"
+  version = "1.8.0"
 
 [[constraint]]
   name = "github.com/onsi/gomega"
-  version = "1.4.2"
+  version = "1.5.0"
 
 [[constraint]]
+  branch = "master"
   name = "k8s.io/api"
-  branch = "release-1.11"
 
 [[constraint]]
-  name = "k8s.io/apimachinery"
-  branch = "release-1.11"
-
-[[constraint]]
+  branch = "master"
   name = "k8s.io/client-go"
-  version = "8.0.0"
 
 [prune]
   go-tests = true
