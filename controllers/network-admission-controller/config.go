@@ -91,7 +91,7 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 			Name: "genie-network-admission-controller-config",
 			Namespace: "kube-system",
 		},
-		Webhooks: []v1beta1.Webhook{
+		Webhooks: []v1beta1.ValidatingWebhook{
 			{
 				Name: "genie-network-admission-controller.k8s.io",
 				Rules: []v1beta1.RuleWithOperations{{
