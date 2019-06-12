@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
 	"github.com/cni-genie/CNI-Genie/client"
 	it "github.com/cni-genie/CNI-Genie/interfaces"
 	"github.com/cni-genie/CNI-Genie/plugins"
@@ -58,6 +59,7 @@ const (
 	NetworkAttachmentDefinitionAnnot = "k8s.v1.cni.cncf.io/networks"
 	// NetworkAttachmentStatusAnnot specifies the network attachment status annotation in pod objent
 	NetworkAttachmentStatusAnnot = "k8s.v1.cni.cncf.io/network-status"
+	err_nopod_novar              = "No pod or env var found"
 )
 
 type SetStatus func(current.Result, string, string, interface{}) interface{}
@@ -204,6 +206,12 @@ func (gc *GenieController) DeletePodNetwork(cniArgs *utils.CNIArgs, conf *utils.
 
 	podAnnot, err := gc.getPodAnnotationsForCNI(k8sArgs)
 	if err != nil {
+		if err_nopod_novar == err.Error() {
+			//Incase of pos container delete, getting pod info will fail. So return success in this case
+			//to ensure complete cleanup of pos container
+			fmt.Fprintf(os.Stderr, "Pod annotations not found during pod delete, proceeding to delete pod")
+			return nil
+		}
 		return fmt.Errorf("Error getting annotations for pod (%s:%s): %v", k8sArgs.K8S_POD_NAMESPACE, k8sArgs.K8S_POD_NAME, err)
 	}
 
@@ -428,7 +436,7 @@ func (gc *GenieController) getPodAnnotationsForCNI(k8sArgs *utils.K8sArgs) (map[
 		args := k8sArgs.K8S_ANNOT
 		if len(args) == 0 {
 			fmt.Fprintln(os.Stderr, "CNI Genie no env var and no pod")
-			return annot, err
+			return annot, errors.New(err_nopod_novar)
 		}
 		fmt.Fprintf(os.Stderr, "CNI Genie env  annot val: %s\n", args)
 		envAnnot := map[string]string{}
@@ -764,7 +772,6 @@ func (gc *GenieController) getK8sPodAnnotations(k8sArgs *utils.K8sArgs) (map[str
 	if err != nil {
 		return nil, err
 	}
-
 	return pod.Annotations, nil
 }
 
