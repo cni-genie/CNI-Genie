@@ -3,10 +3,14 @@ package main_test
 import (
 	"flag"
 	"fmt"
+	logicalv1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/typed/network/v1"
+	"github.com/cni-genie/CNI-Genie/utils"
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -18,11 +22,16 @@ import (
 	"time"
 )
 
-const TEST_NAMESPACE = "test"
+const (
+	TEST_NAMESPACE = "test"
+	DEFAULT        = "default"
+	NetworkCRD     = "logicalnetworks.alpha.network.k8s.io"
+)
 
 var testKubeVersion string
 var testKubeConfig string
 var clientset *kubernetes.Clientset
+var apiextensionsclient *apiextensionsclientset.Clientset
 
 func init() {
 	// go test -args --testKubeVersion="1.6" --testKubeConfig="/root/admin.conf"
@@ -764,6 +773,82 @@ var _ = Describe("CNIGenie", func() {
 			})
 		})
 	})
+	Describe("To create logical network crd objects ", func() {
+		FIt("should succeed crd creation", func() {
+			config, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
+			apiextensionsclient, err = apiextensionsclientset.NewForConfig(config)
+			if err != nil {
+				glog.Errorf("apiextensionsclient error")
+			}
+			crd := &apiextensionsv1beta1.CustomResourceDefinition{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "logicalnetworks.alpha.network.k8s.io",
+				},
+				Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
+					Group:   "alpha.network.k8s.io",
+					Version: "v1",
+					Scope:   apiextensionsv1beta1.NamespaceScoped,
+					Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+						Plural:   "logicalnetworks",
+						Kind:     "LogicalNetwork",
+						Singular: "logicalnetwork",
+					},
+				},
+			}
+			Expect(err).NotTo(HaveOccurred())
+			By("Check for crd creation object creation")
+			glog.Info("To check Custom Resource definition creation")
+			_, err = apiextensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+			Expect(err).NotTo(HaveOccurred())
+			glog.Info("Create a logical network specifying network plugin and customized subnet")
+
+			logicalNet := utils.LogicalNetwork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "net1",
+					Namespace: DEFAULT,
+				},
+			}
+			logicalNet.Spec.Plugin = "weave"
+			logicalNet.Spec.SubSubnet = "10.32.20.0/24"
+			restCli, _ := logicalv1.NewForConfig(config)
+			time.Sleep(time.Duration(5 * time.Second))
+			By("waiting for 5 seconds")
+			_, err = restCli.LogicalNetworks(DEFAULT).Create(&logicalNet)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("Success").To(Equal("Success"))
+		})
+
+		FIt("should succeed weave networking for pod", func() {
+			glog.Info("Add weave networking for Pod by specifying logical network")
+			name := fmt.Sprintf("nginx-weave-%d", rand.Uint32())
+			interfaceName := "eth0"
+			glog.Info(interfaceName)
+			annots := make(map[string]string)
+			annots["cni"] = ""
+			annots["networks"] = "net1"
+			_, err := clientset.CoreV1().Pods(DEFAULT).Create(&v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        name,
+					Annotations: annots,
+				},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:            fmt.Sprintf("container-%s", name),
+					Image:           "nginx:latest",
+					ImagePullPolicy: "IfNotPresent",
+				}}},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for the weave pod to have running status")
+			By("Waiting 10 seconds")
+			time.Sleep(time.Duration(5 * time.Second))
+			pod, err := clientset.CoreV1().Pods(DEFAULT).Get(name, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			glog.Info("pod status =", string(pod.Status.Phase))
+			time.Sleep(time.Duration(5 * time.Second))
+			Expect(string(pod.Status.Phase)).To(Equal("Running"))
+			Expect("Success").To(Equal("Success"))
+		})
+	})
 
 })
 var _ = BeforeSuite(func() {
@@ -790,13 +875,21 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+
+	//delete crd logicalnetworks
+	err := apiextensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(NetworkCRD, &metav1.DeleteOptions{})
+	if err != nil {
+		panic(err)
+	}
+	err = clientset.CoreV1().Pods("default").DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{})
 	// Delete namespace
-	err := clientset.CoreV1().Namespaces().Delete(TEST_NAMESPACE, &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Namespaces().Delete(TEST_NAMESPACE, &metav1.DeleteOptions{})
 	// Delete all pods
 	err = clientset.CoreV1().Pods(TEST_NAMESPACE).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
+
 	// Delete all the installed plugins after usage
 	cmd := exec.Command("../plugins_install.sh", "-deleteall")
 	_, err = cmd.Output()
