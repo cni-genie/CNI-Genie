@@ -6,6 +6,8 @@ import (
 	logicalv1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/typed/network/v1"
 	"github.com/cni-genie/CNI-Genie/utils"
 	"github.com/golang/glog"
+	netattachv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	netattachclientset "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -23,9 +25,11 @@ import (
 )
 
 const (
-	TEST_NAMESPACE = "test"
-	DEFAULT        = "default"
-	NetworkCRD     = "logicalnetworks.alpha.network.k8s.io"
+	TEST_NAMESPACE     = "test"
+	DEFAULT            = "default"
+	NetworkCRD         = "logicalnetworks.alpha.network.k8s.io"
+	CRD_TEST_NAMESPACE = "network"
+	NetAttachDef       = "network-attachment-definitions.k8s.cni.cncf.io"
 )
 
 var testKubeVersion string
@@ -850,6 +854,120 @@ var _ = Describe("CNIGenie", func() {
 		})
 	})
 
+	Describe("To create NetworkAttachmentDefinition CRD ", func() {
+		FIt("should succeed crd creation", func() {
+			config, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
+			apiextensionsclient, err = apiextensionsclientset.NewForConfig(config)
+			if err != nil {
+				glog.Errorf("apiextensionsclient error")
+			}
+			crd := &apiextensionsv1beta1.CustomResourceDefinition{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "network-attachment-definitions.k8s.cni.cncf.io",
+				},
+				Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
+					Group:   "k8s.cni.cncf.io",
+					Version: "v1",
+					Scope:   apiextensionsv1beta1.NamespaceScoped,
+					Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+						Plural:   "network-attachment-definitions",
+						Singular: "network-attachment-definition",
+						Kind:     "NetworkAttachmentDefinition",
+						ShortNames: []string{
+							"net-attach-def",
+						},
+					},
+					Validation: &apiextensionsv1beta1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1beta1.JSONSchemaProps{
+							Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+
+								"spec": {
+									Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+										"config": {},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			_, err = apiextensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("Success").To(Equal("Success"))
+		})
+
+		FIt("To create NetworkAttachmentDefinition object flannel", func() {
+			config, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
+			netattachclient, err := netattachclientset.NewForConfig(config)
+			if err != nil {
+				glog.Errorf("client error")
+			}
+
+			var netattachobj = netattachv1.NetworkAttachmentDefinition{}
+			netattachobj.Name = "flannel-conf"
+			netattachobj.Namespace = TEST_NAMESPACE
+			netattachobj.Spec = netattachv1.NetworkAttachmentDefinitionSpec{
+				Config: "{\n\"cniVersion\": \"0.3.0\",\n\"type\": \"flannel\",\n\"delegate\": {\n\"isDefaultGateway\": true\n}\n}",
+			}
+			//Create NetworkAttachmentDefinition object with plugin as Spec
+			time.Sleep(time.Duration(10 * time.Second))
+			_, err = netattachclient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(TEST_NAMESPACE).Create(&netattachobj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("Success").To(Equal("Success"))
+		})
+
+		//Create NetworkAttachmentDefinition object with plugin configuration as file
+		FIt("To create NetworkAttachmentDefinition object weave", func() {
+			config, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
+			netattachclient, err := netattachclientset.NewForConfig(config)
+			if err != nil {
+				glog.Errorf("client error")
+			}
+			var netattachobj = netattachv1.NetworkAttachmentDefinition{}
+			netattachobj.Name = "weave"
+			netattachobj.Namespace = CRD_TEST_NAMESPACE
+			time.Sleep(time.Duration(5 * time.Second))
+			_, err = netattachclient.K8sCniCncfIoV1().NetworkAttachmentDefinitions(CRD_TEST_NAMESPACE).Create(&netattachobj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("Success").To(Equal("Success"))
+		})
+
+		//flannel, weave networking for Pod
+		FIt("should succeed weave networking for pod", func() {
+			glog.Info("Inside Check for adding weave-flannel networking")
+			name := fmt.Sprintf("nginx-netattachdef-flannel-weave-%d", rand.Uint32())
+			interfaceName := "eth0"
+			glog.Info(interfaceName)
+			annots := make(map[string]string)
+			annots["k8s.v1.cni.cncf.io/networks"] = "flannel-conf,network/weave"
+			time.Sleep(time.Duration(10 * time.Second))
+			_, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Create(&v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        name,
+					Namespace:   TEST_NAMESPACE,
+					Annotations: annots,
+				},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:            fmt.Sprintf("container-%s", name),
+					Image:           "nginx:latest",
+					ImagePullPolicy: "IfNotPresent",
+				}}},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the weave pod to have running status")
+			By("Waiting 10 seconds")
+			time.Sleep(time.Duration(10 * time.Second))
+			pod, err := clientset.CoreV1().Pods(TEST_NAMESPACE).Get(name, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			glog.Info("pod status =", string(pod.Status.Phase))
+			time.Sleep(time.Duration(5 * time.Second))
+			Expect(string(pod.Status.Phase)).To(Equal("Running"))
+			Expect("Success").To(Equal("Success"))
+		})
+
+	})
+
 })
 var _ = BeforeSuite(func() {
 	var config *rest.Config
@@ -876,8 +994,15 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 
+	//Delete crd network-attachment-definitions.k8s.cni.cncf.io
+	err := apiextensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(NetAttachDef, &metav1.DeleteOptions{})
+	if err != nil {
+		panic(err)
+	}
+	//delete namespace network
+	err = clientset.CoreV1().Namespaces().Delete(CRD_TEST_NAMESPACE, &metav1.DeleteOptions{})
 	//delete crd logicalnetworks
-	err := apiextensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(NetworkCRD, &metav1.DeleteOptions{})
+	err = apiextensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(NetworkCRD, &metav1.DeleteOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -912,4 +1037,20 @@ func createNamespace(clientset *kubernetes.Clientset) {
 	ns, err = clientset.CoreV1().Namespaces().Get(TEST_NAMESPACE, metav1.GetOptions{})
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(ns.Name).To(Equal(TEST_NAMESPACE))
+
+	networkns, err := clientset.CoreV1().Namespaces().Create(&v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: CRD_TEST_NAMESPACE},
+	})
+	if err != nil {
+		if errors.IsAlreadyExists(err) {
+			return
+		} else {
+			Expect(err).ShouldNot(HaveOccurred())
+		}
+	}
+	By("Waiting 5 seconds")
+	time.Sleep(time.Duration(5 * time.Second))
+	networkns, err = clientset.CoreV1().Namespaces().Get(CRD_TEST_NAMESPACE, metav1.GetOptions{})
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(networkns.Name).To(Equal(CRD_TEST_NAMESPACE))
 }
