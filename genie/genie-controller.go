@@ -60,6 +60,8 @@ const (
 	// NetworkAttachmentStatusAnnot specifies the network attachment status annotation in pod objent
 	NetworkAttachmentStatusAnnot = "k8s.v1.cni.cncf.io/network-status"
 	err_nopod_novar              = "No pod or env var found"
+	// Default value for cni version
+	DefaultCNIVersion = "0.3.0"
 )
 
 type SetStatus func(current.Result, string, string, interface{}) interface{}
@@ -292,6 +294,19 @@ func parseResult(setStatus SetStatus, ch chan sendCh) (types.Result, interface{}
 	return endResult, interface{}(status)
 }
 
+func (gc *GenieController) fillMandatoryCNIPara(config *libcni.NetworkConfigList) {
+	// This function is used to check if any cni mandatory parameters are missing. If missing, they will be filled
+	//with default parameters
+
+	// Check for cni version field
+	if config.CNIVersion == "" {
+		fmt.Fprintf(os.Stderr, "CNI Version is missing, filling with default value: %v\n", DefaultCNIVersion)
+		config.CNIVersion = DefaultCNIVersion
+	}
+
+	return
+}
+
 func (gc *GenieController) addNetwork(pluginElements []*utils.PluginInfo, cniArgs *utils.CNIArgs, setStatus SetStatus) (types.Result, interface{}, error) {
 	// Collect the result in this variable - this is ultimately what gets "returned" by this function by printing
 	// it to stdout.
@@ -359,6 +374,8 @@ func (gc *GenieController) delegateAddNetwork(pluginInfo *utils.PluginInfo, cniA
 	}
 	fmt.Fprintf(os.Stderr, "CNI Genie runtime conf for plugin (%s): %v\n", pluginInfo.PluginName, *rtConf)
 
+	gc.fillMandatoryCNIPara(pluginInfo.Config)
+
 	res, err := gc.Invoke.InvokeExecAdd(pluginInfo.Config, rtConf)
 	if err != nil {
 		return nil, fmt.Errorf("Error from cni: %v", err)
@@ -398,7 +415,10 @@ func (gc *GenieController) delegateDelNetwork(pluginInfo *utils.PluginInfo, cniA
 	if err != nil {
 		return fmt.Errorf("CNI Genie couldn't convert cniArgs to RuntimeConf: %v", err)
 	}
+
 	fmt.Fprintf(os.Stderr, "CNI Genie runtime conf for plugin (%s): %v\n", pluginInfo.PluginName, *rtConf)
+
+	gc.fillMandatoryCNIPara(pluginInfo.Config)
 
 	err = gc.Invoke.InvokeExecDel(pluginInfo.Config, rtConf)
 	if err != nil {
