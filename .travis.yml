@@ -1,3 +1,4 @@
+dist: xenial
 sudo: required
 language: go
 
@@ -5,10 +6,7 @@ go:
   - 1.x
   - master
 
-script:
-  - make
-  - make test print=y
-
+install: true
 # TODO (Karun): This works only if travis has k8s environment. Hence commenting it for now.
 #install:
 #    - go get -v github.com/onsi/ginkgo/ginkgo
@@ -27,6 +25,29 @@ env:
     - PLUGINREPO=quay.io/huawei-cni-genie/genie-plugin
     - ADMREPO=quay.io/huawei-cni-genie/genie-admission-controller
     - POLICYREPO=quay.io/huawei-cni-genie/genie-policy-controller
+
+before_script:
+  -  mkdir -p $HOME/gopath/src/github.com/cni-genie/CNI-Genie
+  -  rsync -az ${TRAVIS_BUILD_DIR}/ $HOME/gopath/src/github.com/cni-genie/CNI-Genie
+  -  export TRAVIS_BUILD_DIR=$HOME/gopath/src/github.com/cni-genie/CNI-Genie
+  -  cd $HOME/gopath/src/github.com/cni-genie/CNI-Genie
+
+jobs:
+  include:
+    - stage: "Test Jobs"
+      script:
+        - make
+    - stage: Unit Test
+      script:
+        - make test print=y
+
+    - stage: E2E Tests
+      script:
+        - chmod +x e2e/scripts/kube-cluster.sh
+        - bash e2e/scripts/kube-cluster.sh
+        - sleep 30
+        - chmod +x e2e/scripts/e2e.sh
+        - bash -x e2e/scripts/e2e.sh
 
 after_success:
   - docker --version

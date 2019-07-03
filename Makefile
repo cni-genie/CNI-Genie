@@ -49,7 +49,7 @@ genie-policy:
 
 # Build the genie cni plugin tests
 dist/genie-test: $(TEST_SRCFILES)
-	@GOPATH=$(GO_PATH) CGO_ENABLED=0 ETCD_IP=127.0.0.1 PLUGIN=genie CNI_SPEC_VERSION=0.3.0 go test ./e2e/ -args --testKubeVersion=$(testKubeVersion) --testKubeConfig=$(testKubeConfig)
+	@GOPATH=$(GO_PATH) CGO_ENABLED=0 ETCD_IP=127.0.0.1 PLUGIN=genie CNI_SPEC_VERSION=0.3.0 go test -v ./e2e/ -args --testKubeVersion=$(testKubeVersion) --testKubeConfig=$(testKubeConfig)
 
 .PHONY: test
 
