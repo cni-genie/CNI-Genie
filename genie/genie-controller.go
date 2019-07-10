@@ -612,9 +612,8 @@ func (gc *GenieController) parseCNIAnnotations(annot map[string]string, k8sArgs 
 	_, annotExists := annot["cni"]
 
 	if !annotExists {
-		plugins := defaultPlugins(conf)
-		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Using default plugins: %v,  annot is %v\n", plugins, annot)
-		finalPluginInfos, err = gc.getPluginInfo(plugins)
+		fmt.Fprintf(os.Stderr, "CNI Genie no annotations is given! Using default plugins \n")
+		finalPluginInfos, err = gc.handleNoCniCase(conf)
 		if err != nil {
 			return nil, err
 		}
@@ -834,11 +833,29 @@ func setOptionalArgs(optionalParam map[string]string) [][2]string {
 	return args
 }
 
-func defaultPlugins(conf *utils.GenieConf) []string {
+// Function used to select plugin when cni annotation is not provided
+func (gc *GenieController) handleNoCniCase(conf *utils.GenieConf) ([]*utils.PluginInfo, error) {
+	var pluginInfoList []*utils.PluginInfo
+	var err error
+
+	//If no default plugin is mentioned, select first valid conf/conflist file in cni dir as kubelet does
 	if conf.DefaultPlugin == "" {
-		return []string{"weave"}
+		config, err := gc.getClusterNetwork(gc.Cfg.NetDir)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get default plugin: %v", err)
+		}
+
+		fmt.Fprintf(os.Stderr, "CNI Genie no default plugin provided, selected plugin: %s\n", config.Plugins[0].Network.Type)
+		pluginInfoList = append(pluginInfoList, &utils.PluginInfo{PluginName: config.Plugins[0].Network.Type, Config: config, IfName: DefaultIfNamePrefix + "0"})
+	} else {
+		//Use default plugin specified
+		plugins := strings.Split(conf.DefaultPlugin, ",")
+		pluginInfoList, err = gc.getPluginInfo(plugins)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return strings.Split(conf.DefaultPlugin, ",")
+	return pluginInfoList, nil
 }
 
 func mergeWithResult(src *current.Result, dst *current.Result) (*current.Result, error) {
