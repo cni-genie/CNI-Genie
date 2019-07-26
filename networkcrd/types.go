@@ -1,6 +1,7 @@
 package networkcrd
 
 import (
+	"github.com/cni-genie/CNI-Genie/utils"
 	"github.com/containernetworking/cni/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -51,6 +52,10 @@ type NetworkSelectionElement struct {
 	// to the container by this network attachment
 	// +optional
 	Interface string `json:"interface,omitempty"`
+
+	//Runtime configuration to be passed to CNI
+	// +optional
+	RuntimeConfig *utils.RuntimeConfig `json:"runtimeConfig,omitempty"`
 }
 
 // NetworkStatus describes the status to be updated in pod

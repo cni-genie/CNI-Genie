@@ -155,6 +155,18 @@ type PhysicalNetworkList struct {
 
 type ValidateResult func(types.Result, interface{}) error
 
+// RuntimeConfig specifies CNI RuntimeConfig
+type RuntimeConfig struct {
+	PortMapEntries []PortMapping `json:"portMappings,omitempty"`
+}
+
+// PortMapping for CNI
+type PortMapping struct {
+	HostPort      int    `json:"hostPort"`
+	ContainerPort int    `json:"containerPort"`
+	Protocol      string `json:"protocol"`
+}
+
 // PluginInfo describes the details of plugin info for user pod
 type PluginInfo struct {
 	PluginName       string
@@ -163,6 +175,7 @@ type PluginInfo struct {
 	Refer_nic        string
 	Config           *libcni.NetworkConfigList
 	OptionalArgs     map[string]string
+	RuntimeConfig    *RuntimeConfig
 	ValidationParams interface{}
 	ValidateRes      ValidateResult
 }
