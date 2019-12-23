@@ -172,6 +172,9 @@ metadata:
   name: genie-network-admission-controller
   namespace: kube-system
 spec:
+  selector:
+    matchLabels:
+      role: genie-network-admission-controller
   template:
     metadata:
       labels:
