@@ -88,6 +88,7 @@ data:
     {
         "name": "k8s-pod-network",
         "type": "genie",
+        "cniVersion": "0.2.0",
         "log_level": "info",
         "datastore_type": "kubernetes",
         "hostname": "__KUBERNETES_NODE_NAME__",
