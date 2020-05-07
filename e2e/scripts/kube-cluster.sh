@@ -22,6 +22,6 @@ kubectl taint nodes --all node-role.kubernetes.io/master-
 
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
-kubectl apply -f https://raw.githubusercontent.com/cni-genie/CNI-Genie/master/conf/1.8/genie-complete.yaml
+kubectl apply -f conf/1.8/genie-complete.yaml
 
 
