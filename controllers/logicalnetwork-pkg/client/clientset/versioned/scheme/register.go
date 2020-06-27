@@ -14,11 +14,11 @@
 package scheme
 
 import (
+	alphav1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
-	alphav1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/apis/alpha/network/v1"
 )
 
 var Scheme = runtime.NewScheme()

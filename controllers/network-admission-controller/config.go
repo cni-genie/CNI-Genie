@@ -88,7 +88,7 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 	}
 	webhookConfig := &v1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "genie-network-admission-controller-config",
+			Name:      "genie-network-admission-controller-config",
 			Namespace: "kube-system",
 		},
 		Webhooks: []v1beta1.ValidatingWebhook{

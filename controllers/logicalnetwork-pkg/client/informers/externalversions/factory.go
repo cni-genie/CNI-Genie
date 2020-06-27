@@ -18,13 +18,13 @@ import (
 	sync "sync"
 	time "time"
 
+	versioned "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
+	internalinterfaces "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
+	network "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/network"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned"
-	internalinterfaces "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/internalinterfaces"
-	network "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/informers/externalversions/network"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.

@@ -14,10 +14,10 @@
 package versioned
 
 import (
+	alphav1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/typed/network/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-	alphav1 "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/typed/network/v1"
 )
 
 type Interface interface {
