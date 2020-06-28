@@ -6,6 +6,7 @@
 GO_PATH=$(GOPATH)
 SRCFILES=cni-genie.go
 TEST_SRCFILES=$(wildcard *_test.go)
+GO_PKG	:= $(shell go list ./... | grep -v vendor)
 
 # Ensure that the dist directory is always created
 MAKE_SURE_DIST_EXIST := $(shell mkdir -p dist)
@@ -66,3 +67,6 @@ endif
 test:
 	go test ${PRINT} `go list ./${TESTDIR}/... | grep -v vendor | grep -v e2e | grep -v controllers`
 
+.PHONY: fmt
+fmt:
+	@go fmt $(GO_PKG)

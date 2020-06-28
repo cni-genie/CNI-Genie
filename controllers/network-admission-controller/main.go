@@ -22,11 +22,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/golang/glog"
 	genieUtils "github.com/cni-genie/CNI-Genie/utils"
+	"github.com/golang/glog"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 )
 
 // only allow logical networks objects to be created only when all input validations are passed

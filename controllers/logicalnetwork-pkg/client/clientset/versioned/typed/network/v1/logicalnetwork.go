@@ -14,12 +14,12 @@
 package v1
 
 import (
+	scheme "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/scheme"
+	v1 "github.com/cni-genie/CNI-Genie/utils"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	v1 "github.com/cni-genie/CNI-Genie/utils"
-	scheme "github.com/cni-genie/CNI-Genie/controllers/logicalnetwork-pkg/client/clientset/versioned/scheme"
 )
 
 // LogicalNetworksGetter has a method to return a LogicalNetworkInterface.
