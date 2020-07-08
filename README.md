@@ -28,7 +28,7 @@ Here is a 6 minute demo video that demonstrates 3 scenarios
 
 # Why we created CNI-Genie?
 
-CNI Genie is an add-on to [Kuberenets](https://github.com/kubernetes/kubernetes) open-source project and is designed to provide the following features:
+CNI Genie is an add-on to [Kubernetes](https://github.com/kubernetes/kubernetes) open-source project and is designed to provide the following features:
 
 1. [wide range of network offerings, CNI plugins](docs/multiple-cni-plugins/README.md), available to the users in runtime. This figure shows Kubernetes CNI Plugin landscape before and after CNI-Genie
    ![image](docs/multiple-cni-plugins/what-cni-genie.png)
