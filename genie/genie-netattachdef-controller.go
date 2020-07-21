@@ -40,6 +40,9 @@ func (gc *GenieController) parseNetAttachDefAnnot(annot string, k8sArgs *utils.K
 			return nil, err
 		}
 
+		pluginInfo.RuntimeConfig = netElem.RuntimeConfig
+		fmt.Fprintf(os.Stderr, "CNI Genie runtime config : %+v\n", pluginInfo.RuntimeConfig)
+
 		pluginInfo.OptionalArgs = make(map[string]string, 0)
 
 		if len(netElem.IPs) > 0 {
