@@ -515,7 +515,7 @@ func (gc *GenieController) getPluginInfo(plugins []string) ([]*utils.PluginInfo,
 		}
 		ifNameMap[i] = ifName
 	}
-	fmt.Fprintf(os.Stderr, "CNI Genie plugion map: %+v\n", pluginMap)
+	fmt.Fprintf(os.Stderr, "CNI Genie plugin map: %+v\n", pluginMap)
 	for _, file := range gc.Cfg.Files {
 		// Parse file name and check whether it matches any of the requested plugins
 		// In conf file name, the plugin name should be followed by a '.' and
