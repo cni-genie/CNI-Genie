@@ -123,7 +123,7 @@ func ParseCNIConf(confData []byte) (*utils.GenieConf, error) {
 
 // AddPodNetwork adds pod networking. It has logic to parse each pod
 // definition's annotations. It looks for container networking solutions (CNS)
-// types passed as annotation in pod defintion. For every CNS types, it talks
+// types passed as annotation in pod definition. For every CNS types, it talks
 // to corresponding CNS object and fetches an IP from it's IPAM.
 // It also applies the IP as ethX inside the pod.
 func (gc *GenieController) AddPodNetwork(cniArgs *utils.CNIArgs, conf *utils.GenieConf) (types.Result, error) {
@@ -194,7 +194,7 @@ func (gc *GenieController) AddPodNetwork(cniArgs *utils.CNIArgs, conf *utils.Gen
 
 // DeletePodNetwork deletes pod networking. It has logic to parse each pod
 // definition's annotations. It looks for container networking solutions (CNS)
-// types passed as annotation in pod defintion. For every CNS types, it talks
+// types passed as annotation in pod definition. For every CNS types, it talks
 // to corresponding CNS object and releases an IP from it's IPAM.
 func (gc *GenieController) DeletePodNetwork(cniArgs *utils.CNIArgs, conf *utils.GenieConf) error {
 	k8sArgs, err := loadArgs(cniArgs)
@@ -604,7 +604,7 @@ func (gc *GenieController) loadPluginConfig(plugin string) (*libcni.NetworkConfi
 	return config, nil
 }
 
-//  parseCNIAnnotations parses pod yaml defintion for "cni" annotations.
+//  parseCNIAnnotations parses pod yaml definition for "cni" annotations.
 func (gc *GenieController) parseCNIAnnotations(annot map[string]string, k8sArgs *utils.K8sArgs, conf *utils.GenieConf) ([]*utils.PluginInfo, error) {
 	var finalPluginInfos []*utils.PluginInfo
 	var err error
