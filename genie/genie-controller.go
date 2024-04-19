@@ -453,16 +453,17 @@ func GetPodDefinition(client *kubernetes.Clientset, podNamespace string, podName
 func (gc *GenieController) getPodAnnotationsForCNI(k8sArgs *utils.K8sArgs) (map[string]string, error) {
 	annot, err := gc.getK8sPodAnnotations(k8sArgs)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "CNI Genie error getting annotations from pod: `%v`\n", err)
 		args := k8sArgs.K8S_ANNOT
 		if len(args) == 0 {
 			fmt.Fprintln(os.Stderr, "CNI Genie no env var and no pod")
 			return annot, errors.New(err_nopod_novar)
 		}
-		fmt.Fprintf(os.Stderr, "CNI Genie env  annot val: %s\n", args)
+		fmt.Fprintf(os.Stderr, "CNI Genie env annot val: %s\n", args)
 		envAnnot := map[string]string{}
 		errEnv := json.Unmarshal([]byte(args), &envAnnot)
 		if errEnv != nil {
-			fmt.Fprintf(os.Stderr, "CNI Genie error getting annotations from pod: `%v` and Error Using annotations from ENV: `%v`\n", err, errEnv)
+			fmt.Fprintf(os.Stderr, "CNI Genie error using annotations from ENV: `%v`\n", errEnv)
 			return annot, err
 		}
 		annot = envAnnot
