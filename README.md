@@ -1,4 +1,8 @@
-# CNI-Genie
+# CNI-Genie (archived)
+
+⚠️ ⚠️ ⚠️ **Notice: This project has been archived and is no longer active development.** ⚠️ ⚠️ ⚠️
+
+-----
 
 CNI-Genie enables container orchestrators ([Kubernetes](https://github.com/kubernetes/kubernetes), [Mesos](https://mesosphere.com/)) to seamlessly connect to the choice of CNI plugins installed on a host, including
 1. ['reference' CNI plugins](https://github.com/containernetworking/plugins), e.g., bridge, macvlan, ipvlan, loopback
