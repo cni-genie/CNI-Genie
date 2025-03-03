@@ -368,7 +368,7 @@ func (gc *GenieController) delegateAddNetwork(pluginInfo *utils.PluginInfo, cniA
 	if err := os.Unsetenv("CNI_ARGS"); err != nil {
 		fmt.Fprintf(os.Stderr, "CNI Genie Error while unsetting env variable CNI_Args: %v\n", err)
 	}
-	rtConf, err := runtimeConf(cniArgs, pluginInfo.IfName, pluginInfo.OptionalArgs)
+	rtConf, err := runtimeConf(cniArgs, pluginInfo.IfName, pluginInfo.OptionalArgs, pluginInfo.RuntimeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("Error generating runtime conf: %v", err)
 	}
@@ -411,7 +411,7 @@ func (gc *GenieController) deleteNetwork(pluginElements []*utils.PluginInfo, cni
 }
 
 func (gc *GenieController) delegateDelNetwork(pluginInfo *utils.PluginInfo, cniArgs *utils.CNIArgs) error {
-	rtConf, err := runtimeConf(cniArgs, pluginInfo.IfName, pluginInfo.OptionalArgs)
+	rtConf, err := runtimeConf(cniArgs, pluginInfo.IfName, pluginInfo.OptionalArgs, pluginInfo.RuntimeConfig)
 	if err != nil {
 		return fmt.Errorf("CNI Genie couldn't convert cniArgs to RuntimeConf: %v", err)
 	}
@@ -794,7 +794,7 @@ func (gc *GenieController) getK8sPodAnnotations(k8sArgs *utils.K8sArgs) (map[str
 	return pod.Annotations, nil
 }
 
-func runtimeConf(cniArgs *utils.CNIArgs, iface string, optionalArgs map[string]string) (*libcni.RuntimeConf, error) {
+func runtimeConf(cniArgs *utils.CNIArgs, iface string, optionalArgs map[string]string, runtimeConfig *utils.RuntimeConfig) (*libcni.RuntimeConf, error) {
 	k8sArgs, err := loadArgs(cniArgs)
 	if err != nil {
 		return nil, err
@@ -815,11 +815,20 @@ func runtimeConf(cniArgs *utils.CNIArgs, iface string, optionalArgs map[string]s
 
 	args = append(args, setOptionalArgs(optionalArgs)...)
 
-	return &libcni.RuntimeConf{
+	rt := &libcni.RuntimeConf{
 		ContainerID: cniArgs.ContainerID,
 		NetNS:       cniArgs.Netns,
 		IfName:      iface,
-		Args:        args}, nil
+		Args:        args}
+
+	if runtimeConfig != nil {
+		rt.CapabilityArgs = map[string]interface{}{
+			"portMappings": runtimeConfig.PortMapEntries,
+		}
+		fmt.Fprintf(os.Stderr, "CNI Genie runtime config = %v\n", rt.CapabilityArgs)
+	}
+
+	return rt, nil
 }
 
 func setOptionalArgs(optionalParam map[string]string) [][2]string {
@@ -830,6 +839,7 @@ func setOptionalArgs(optionalParam map[string]string) [][2]string {
 	if optionalParam["mac"] != "" {
 		args = append(args, [2]string{"MAC", optionalParam["mac"]})
 	}
+
 	return args
 }
 
